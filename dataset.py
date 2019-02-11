@@ -1,95 +1,126 @@
 import pandas as pd 
 import pickle
+import re
 import numpy as np
+import os
 from PatientVec.preprocess.vocabulary import Vocabulary
 from PatientVec.preprocess.embedder import PretrainedEmbedding
-from PatientVec.preprocess.vectorizer import Vectorizer, DataHolder
+from PatientVec.preprocess.vectorizer import DataHolder
+from PatientVec.preprocess.field_processor import field_processors
 
-from sklearn.model_selection import train_test_split
-from copy import deepcopy
+import logging
+logging.basicConfig(format='%(levelname)s - %(asctime)s - %(message)s', level=logging.INFO)
 
 class Dataset() :
-    def __init__(self, name, dirname, labelfield, train_size=0.8) :
+    def __init__(self, name, dirname) :
         self.name = name
         self.vocab = Vocabulary().load(dirname)
         self.embedding = PretrainedEmbedding().load(dirname)
-        self.sequences = Vectorizer().load_sequences(dirname + '/note_sequences.p')
-        self.dataframe = pd.read_csv(dirname + '/data_nonotes.csv')
 
-        self.labels = np.array(self.dataframe[labelfield])
+        logging.info("Reading Structured data ...")
+        structured_data_file = os.path.join(dirname, 'Split_Structured_Final.msg')
+        self.dataframe = pd.read_msgpack(structured_data_file).reset_index(drop=True)
+        assert 'exp_split' in self.dataframe.columns, logging.error("exp_split not in dataframe columns")
 
+        logging.info("Reading Notes ...")
+        notes_file = os.path.join(dirname, 'combined_notes_sequences.p')
+        self.sequences = pickle.load(open(notes_file, 'rb'))
+
+        logging.info("Stratifying ...")
         self.idxs = {}
-        self.idxs['train'], self.idxs['test'] = train_test_split(list(range(len(self.labels))), stratify=self.labels, train_size=train_size, random_state=1298)
+        for t in ['train', 'dev', 'test'] :
+            self.idxs[t] = list(self.dataframe[self.dataframe['exp_split'] == t].index)
+            if len(self.idxs[t]) == 0 : 
+                logging.warning("No records for %s split", t)
 
-    def get_data(self, field) :
-        filtered_idxs = [i for i in self.idxs[field] if len(self.sequences[i]) < 10000]
-        X = [self.sequences[i] for i in filtered_idxs]
-        y = [self.labels[i] for i in filtered_idxs]
-        print("Pos Percentage", sum(y)/len(y))
-        return DataHolder(X=X, y=y)
-
-    def generate_label_map_for_probing_field(self, probing_field) :
-        probing_labels = sorted(self.dataframe[probing_field].unique())
-        return {k:i for i, k in enumerate(probing_labels)}
-
-    def get_data_for_probing(self, probing_field, field) :
-        probing_labels = list(self.dataframe[probing_field])
-        label_map = self.generate_label_map_for_probing_field(probing_field)
-        mapped_probing_labels = list(map(lambda s : label_map[s], probing_labels))
+        self.encodings = {}
+        self.structured_columns = []
+        self.structured_dim = 0
         
-        filtered_idxs = [i for i in self.idxs[field] if len(self.sequences[i]) < 10000]
+    def generate_labels(self, label_list, output_size, predictor) :
+        for labelfield in label_list :
+            assert labelfield in self.dataframe.columns, logging.error("Labelfield %s not in dataframe columns", labelfield)
+        label_cols = np.array([list(self.dataframe[l]) for l in label_list]).T
+        self.y = label_cols
+        
+        self.output_size = output_size
+        self.predictor_type = predictor
+
+    def generate_encoded_field(self, field, encoding_type, encoding_args=None) :
+        assert field in self.dataframe.columns, logging.error("%s not in dataframe columns", field)
+        if encoding_args is None : 
+            encoding_args = {}
+
+        datafield = np.array(self.dataframe[field])
+        encoder = field_processors[encoding_type](encoding_args)
+        encoder.fit(datafield)
+
+        self.encodings[field] = encoder
+
+    def set_structured_params(self, regexs) :
+        columns = list(self.dataframe.columns)
+        self.structured_columns = [x for x in columns if any(re.search(r, x) for r in regexs)]
+        self.structured_dim = 0
+        for x in self.structured_columns :
+            assert x in self.encodings, logging.error('%s not in encodings', x)
+            self.structured_dim += self.encodings[x].get_output_dim()
+
+    def get_embedding_params(self) :
+        return {
+            "vocab_size" : self.vocab.vocab_size,
+            "embed_size" : self.embedding.word_dim,
+            "embedding_file" : self.embedding.embedding_file
+        }
+
+    def get_encodings_dim(self, encodings) :
+        encoding_dim = 0
+        for e in encodings :
+            assert e in self.encodings, logging.error('%s field not in encodings', e)
+            encoding_dim += self.encodings[e].get_output_dim()
+
+        return encoding_dim
+
+    def get_data(self, _type, structured, encodings=None) :
+        filtered_idxs = self.idxs[_type]
         X = [self.sequences[i] for i in filtered_idxs]
-        y = [mapped_probing_labels[i] for i in filtered_idxs]
-        print("Pos Percentage", sum(y)/len(y))
-        return DataHolder(X=X, y=y)
+        y = [self.y[i] for i in filtered_idxs]
 
+        print("Pos Percentage", np.array(sum(y))/len(y))
 
-def get_basic_model_config(data, exp_name, prober=False) :
-    config = {
-        'exp_name' : exp_name,
-        'training' : {
-            'bsize' : 32,
-            'weight_decay' : 1e-4,
-            'class_weight' : True
-        },
-        'model' : {
-            'embedder' : {
-                'name' : 'token',
-                'params' : {
-                    'vocab_size' : data.vocab.vocab_size,
-                    'embed_size' : data.embedding.word_dim,
-                    'pre_embed' : data.embedding.embeddings
-                }
-            },
-            'encoder' : {
-                'name' : 'LSTM', 
-                'params' : {
-                    'hidden_size' : 128
-                }
-            },
-            'decoder' : {
-                'name' : 'MLP',
-                'params' : {
-                    'hidden_size' : 128,
-                    'output_size' : 1
-                },
-                'predictor' : {
-                    'name' : 'binary'
-                }
-            }
-        }
-    }
+        data = DataHolder(X=X, y=y)
+        
+        if encodings is not None :
+            encoded_values = []
+            for k in encodings :
+                field = np.array(self.dataframe[k])
+                filtered_field = np.array([field[i] for i in filtered_idxs])
+                encoded_values.append(self.encodings[k].transform(filtered_field))
 
-    if prober :
-        config['model']['prober'] = {
-            'name' : 'MLP',
-            'params' : {
-                'hidden_size' : 128,
-                'output_size' : 1
-            },
-            'predictor' : {
-                'name' : 'binary'
-            }
-        }
+            encoded_values = np.concatenate(encoded_values, axis=1)
+            data.add_fields(cond=encoded_values)
 
-    return config
+        if structured :
+            structured_values = []
+            for k in self.structured_columns :
+                field = np.array(self.dataframe[k])
+                filtered_field = np.array([field[i] for i in filtered_idxs])
+                structured_values.append(self.encodings[k].transform(filtered_field))
+
+            structured_values = np.concatenate(structured_values, axis=1)
+            data.add_fields(structured_data=structured_values)
+
+        return data
+
+    def filter_data_length(self, data, truncate=95) :
+        docs = [[y for x in d for y in x] for d in data.X]
+        total_sentence_length = [len(x) for x in docs]
+        
+        filter_perc = np.percentile(total_sentence_length, truncate)
+        logging.info("Maximum Sentence Length %f , %d percentile length %f ... ", max(total_sentence_length), truncate, filter_perc)
+        valid_idxs = [i for i in range(len(docs)) if total_sentence_length[i] <= filter_perc]
+
+        target = [data.y[i] for i in valid_idxs]
+        logging.info("Pos Percentage of remaining data ... ")
+        logging.info(np.array(sum(target))/len(target))
+        
+        return data.filter(valid_idxs)

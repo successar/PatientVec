@@ -2,3 +2,7 @@
 __pycache__
 outputs
 preprocess/**/*
+data
+Text-encoding-EHR
+.vscode
+latex_evals/

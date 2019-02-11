@@ -1,8 +1,16 @@
 import torch
 import torch.nn as nn
 
-class TokenEmbedder(nn.Module) :
-    def __init__(self, vocab_size, embed_size, pre_embed=None) :
+import numpy as np
+
+from allennlp.common import Registrable
+
+class Embedder(nn.Module, Registrable) :
+    pass
+
+@Embedder.register("token_embedder")
+class TokenEmbedder(Embedder) :
+    def __init__(self, vocab_size, embed_size, embedding_file=None) :
         super().__init__()
         self.embed_size = embed_size
         self.vocab_size = vocab_size
@@ -12,9 +20,10 @@ class TokenEmbedder(nn.Module) :
             'vocab_size' : vocab_size
         }
         
-        if pre_embed is not None :
+        if embedding_file is not None :
+            pre_trained_embedding = np.load(embedding_file)
             print("Setting Embedding")
-            weight = torch.Tensor(pre_embed)
+            weight = torch.Tensor(pre_trained_embedding)
             weight[0, :].zero_()
             self.embedding = nn.Embedding(vocab_size, embed_size, _weight=weight, padding_idx=0)
         else :
@@ -22,11 +31,3 @@ class TokenEmbedder(nn.Module) :
             
     def forward(self, seq) :
         return self.embedding(seq)
-    
-embedders = { 'token' : TokenEmbedder }
-
-def get_embedder(embedder_params) :
-    embedder_name = embedder_params['name']
-    embedder = embedders[embedder_name](**embedder_params['params'])
-    embedder_config = {'name' : embedder_name, 'params' : embedder.config}
-    return embedder, embedder_config
