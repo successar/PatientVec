@@ -1,7 +1,11 @@
 .ipynb_checkpoints
 __pycache__
 outputs
-preprocess/**/*
+preprocess/Diagnosis
+preprocess/Readmission
+preprocess/Mortality
+preprocess/IMDB
+preprocess/WhatInNote
 data
 Text-encoding-EHR
 .vscode

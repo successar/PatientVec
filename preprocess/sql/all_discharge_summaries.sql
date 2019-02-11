@@ -1,0 +1,1 @@
+select subject_id, hadm_id, chartdate, description, text from mimiciii.noteevents where category = 'Discharge summary' and iserror is null;
