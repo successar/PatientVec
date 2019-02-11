@@ -12,4 +12,4 @@
 #No USE SBATCH --gres=gpu:1
 #No USE SBATCH --constraint="E5-2690v3@2.60GHz"
 
-srun python Diagnosis.py --data_dir="/scratch/jain.sar/PatientVec"
+srun python /home/jain.sar/PatientVec/Diagnosis.py --data_dir="/scratch/jain.sar/PatientVec"
