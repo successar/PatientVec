@@ -1,7 +1,7 @@
-from dataset import Dataset
+from PatientVec.dataset import Dataset
 import numpy as np
 
-from common import *
+from PatientVec.common import *
 
 import argparse
 parser = argparse.ArgumentParser(description='Run Diagnosis experiments')

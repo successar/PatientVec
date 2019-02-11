@@ -1,6 +1,6 @@
 from tqdm import tqdm_notebook
 import numpy as np
-from metrics import *
+from PatientVec.metrics import *
 import json
 import pandas as pd
 from collections import defaultdict

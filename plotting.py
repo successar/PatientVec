@@ -1,4 +1,4 @@
-from common import *
+from PatientVec.common import *
 
 import matplotlib as mpl
 import matplotlib.gridspec as gridspec

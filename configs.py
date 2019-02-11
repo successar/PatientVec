@@ -1,4 +1,4 @@
-from config_units import *
+from PatientVec.config_units import *
 
 def get_basic_model_config(data, exp_name) :
     config = {
