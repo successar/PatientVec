@@ -8,8 +8,8 @@
 #SBATCH --time=04:00:00                            
 #SBATCH --output=diagnosis_result.%j.out               
 #SBATCH --error=diagnosis_result.%j.err                
-#SBATCH --partition=general
-#No USE SBATCH --gres=gpu:1
-#No USE SBATCH --constraint="E5-2690v3@2.60GHz"
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:1
+#SBATCH --constraint="E5-2690v3@2.60GHz"
 
 srun python /home/jain.sar/PatientVec/Diagnosis.py --data_dir="/scratch/jain.sar/PatientVec" --output_dir="/scratch/jain.sar/outputs"
