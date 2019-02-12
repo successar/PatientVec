@@ -112,15 +112,17 @@ class LDA :
     def __init__(self, config) :
         vocab = config['vocab']
         stop_words = config.get('stop_words', False)
+        self.metrics = metrics_map[config['type']]
+
+        self.time_str = time.ctime().replace(' ', '_')
+        self.exp_name = config['exp_name']
 
         self.bowder = BoWder(vocab=vocab, stop_words=stop_words)
         self.lda = LatentDirichletAllocation(n_components=50, learning_method='online', verbose=1)
 
-        self.lda_classifier = LogisticRegression(class_weight='balanced', penalty='l1')
-        self.lda_with_structured_classifier = LogisticRegression(class_weight='balanced', penalty='l1')
-
-        self.time_str = time.ctime().replace(' ', '_')
-        self.exp_name = config['exp_name']
+        self.lda_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
+        self.lda_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
+        
         self.dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+LDA', self.time_str)
         self.structured_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+LDA+Structured', self.time_str)
 
@@ -140,15 +142,17 @@ class LDA :
         dev_bow = self.bowder.get_bow(docs)
         dev_lda = self.lda.transform(dev_bow)
 
-        pred_lda = self.lda_classifier.predict_proba(dev_lda)
+        pred_lda = normalise_output(np.array(self.lda_classifier.predict_proba(dev_lda)))
 
         dev_lda = np.concatenate([dev_lda, data.structured_data], axis=-1)
-        pred_lda_structured = self.lda_with_structured_classifier.predict_proba(dev_lda)
+        pred_lda_structured = normalise_output(np.array(self.lda_with_structured_classifier.predict_proba(dev_lda)))
 
-        metrics = calc_metrics_classification(data.y, pred_lda)
-        metrics_structured = calc_metrics_classification(data.y, pred_lda_structured)
-        print("LDA", metrics)
-        print("LDA_Structured", metrics_structured)
+        metrics = self.metrics(data.y, pred_lda)
+        metrics_structured = self.metrics(data.y, pred_lda_structured)
+        print("LDA")
+        print_metrics(metrics)
+        print("LDA_Structured")
+        print_metrics(metrics_structured)
 
         if save_results :
             os.makedirs(self.dirname, exist_ok=True)

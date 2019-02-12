@@ -12,4 +12,4 @@
 #SBATCH --gres=gpu:1
 #SBATCH --constraint="E5-2690v3@2.60GHz"
 
-srun python /home/jain.sar/PatientVec/Diagnosis.py --data_dir="/scratch/jain.sar/PatientVec" --output_dir="/scratch/jain.sar/outputs"
+srun python /home/jain.sar/PatientVec/Diagnosis.py --data_dir="/scratch/jain.sar/PatientVec" --output_dir="/scratch/jain.sar/PatientVec/outputs"
