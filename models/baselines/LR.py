@@ -26,11 +26,11 @@ class LR :
         self.bow_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
         self.tf_idf_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
 
-        self.bow_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+BOW', self.time_str)
-        self.tf_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+TFIDF', self.time_str)
+        self.bow_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+BOW', self.time_str)
+        self.tf_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+TFIDF', self.time_str)
 
-        self.bow_structured_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+BOW+Structured', self.time_str)
-        self.tf_structured_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+TFIDF+Structured', self.time_str)
+        self.bow_structured_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+BOW+Structured', self.time_str)
+        self.tf_structured_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+TFIDF+Structured', self.time_str)
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]
@@ -123,8 +123,8 @@ class LDA :
         self.lda_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
         self.lda_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
         
-        self.dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+LDA', self.time_str)
-        self.structured_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+LDA+Structured', self.time_str)
+        self.dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+LDA', self.time_str)
+        self.structured_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+LDA+Structured', self.time_str)
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]
