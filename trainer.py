@@ -2,30 +2,6 @@ from tqdm import tqdm_notebook
 import numpy as np
 from PatientVec.metrics import *
 import json
-import pandas as pd
-from collections import defaultdict
-
-from IPython.display import display
-
-metrics_map = {
-    'classifier' : calc_metrics_classification,
-    'regression' : calc_metrics_regression,
-    'multilabel' : calc_metrics_multilabel
-}
-
-def print_metrics(metrics) :
-    tabular = {k:v for k, v in metrics.items() if '/' in k}
-    non_tabular = {k:v for k, v in metrics.items() if '/' not in k}
-    print(non_tabular)
-
-    d = defaultdict(dict)
-    for k, v in tabular.items() :
-        if '/1/' in k :
-            d[k.split('/', 1)[0]][k.split('/', 1)[1]] = v
-
-    df = pd.DataFrame(d)
-    with pd.option_context('display.max_columns', 30):
-        display(df.round(3))
 
 class Trainer() :
     def __init__(self, Model, config, _type='classifier', display_metrics=True) :

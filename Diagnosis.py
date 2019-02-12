@@ -25,27 +25,29 @@ for f in features :
     
 data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
 
-# from trainer import Trainer, Evaluator
-# from models.Vanilla import ClassificationTrainer as BasicCT
-# from models.Hierarchical import ClassificationTrainer as HierCT
+from trainer import Trainer, Evaluator
+from models.Vanilla import ClassificationTrainer as BasicCT
+from models.Hierarchical import ClassificationTrainer as HierCT
 
-# from Experiments.experiments import experiments, hierarchical_experiments, structured_experiments
+from Experiments.experiments import experiments, hierarchical_experiments, structured_experiments
 
-# train_data = data.get_data('train', structured=True)
-# dev_data = data.get_data('dev', structured=True)
+train_data = data.get_data('train', structured=True)
+dev_data = data.get_data('dev', structured=True)
 
-# train_data = data.filter_data_length(train_data, truncate=90)
-# dev_data = data.filter_data_length(dev_data, truncate=90)
+train_data = data.filter_data_length(train_data, truncate=90)
+dev_data = data.filter_data_length(dev_data, truncate=90)
 
-# for e in experiments :
-#     config = e(data, structured=True)
-#     print(config)
-#     trainer = Trainer(BasicCT, config, _type='multilabel', display_metrics=args.display)
-#     trainer.train(train_data, dev_data, save_on_metric='macro_roc_auc')
+for e in experiments :
+    config = e(data, structured=True)
+    if args.output_dir is not None :
+        config['exp_config']['basepath'] = args.output_dir
+    print(config)
+    trainer = Trainer(BasicCT, config, _type='multilabel', display_metrics=args.display)
+    trainer.train(train_data, dev_data, save_on_metric='macro_roc_auc')
 
-#     evaluator = Evaluator(BasicCT, trainer.model.dirname, _type='multilabel', display_metrics=args.display)
-#     _ = evaluator.evaluate(dev_data, save_results=True)
-#     print('='*300)
+    evaluator = Evaluator(BasicCT, trainer.model.dirname, _type='multilabel', display_metrics=args.display)
+    _ = evaluator.evaluate(dev_data, save_results=True)
+    print('='*300)
     
 # for e in experiments :
 #     for use_structured in [True, False] :

@@ -1,6 +1,10 @@
 from sklearn.metrics import *
 import numpy as np
 from pandas.io.json.normalize import nested_to_record
+from collections import defaultdict
+import pandas as pd
+from IPython.display import display
+
 
 def calc_metrics_classification(target, predictions) :
     if predictions.shape[-1] == 1 :
@@ -46,4 +50,24 @@ def calc_metrics_multilabel(target, predictions) :
     rep['macro_pr_auc'] = macro_pr_auc
     
     return rep
+
+metrics_map = {
+    'classifier' : calc_metrics_classification,
+    'regression' : calc_metrics_regression,
+    'multilabel' : calc_metrics_multilabel
+}
+
+def print_metrics(metrics) :
+    tabular = {k:v for k, v in metrics.items() if '/' in k}
+    non_tabular = {k:v for k, v in metrics.items() if '/' not in k}
+    print(non_tabular)
+
+    d = defaultdict(dict)
+    for k, v in tabular.items() :
+        if '/1/' in k :
+            d[k.split('/', 1)[0]][k.split('/', 1)[1]] = v
+
+    df = pd.DataFrame(d)
+    with pd.option_context('display.max_columns', 30):
+        display(df.round(3))
         

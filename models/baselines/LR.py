@@ -1,23 +1,30 @@
 from PatientVec.preprocess.vectorizer import BoWder
 from sklearn.linear_model import LogisticRegression
+from sklearn.multioutput import MultiOutputClassifier
 from PatientVec.metrics import *
 import time, json
 import os
+
+def normalise_output(y) :
+    if y.shape[0] == 1 :
+        return y[0]
+    return y[:, :, 1].T
 
 class LR :
     def __init__(self, config) :
         vocab = config['vocab']
         stop_words = config.get('stop_words', False)
-
-        self.bowder = BoWder(vocab=vocab, stop_words=stop_words)
-        self.bow_classifier = LogisticRegression(class_weight='balanced', penalty='l1')
-        self.tf_idf_classifier = LogisticRegression(class_weight='balanced', penalty='l1')
-
-        self.bow_with_structured_classifier = LogisticRegression(class_weight='balanced', penalty='l1')
-        self.tf_idf_with_structured_classifier = LogisticRegression(class_weight='balanced', penalty='l1')
+        self.metrics = metrics_map[config['type']]
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
+
+        self.bowder = BoWder(vocab=vocab, stop_words=stop_words)
+        self.bow_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
+        self.tf_idf_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
+
+        self.bow_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
+        self.tf_idf_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
 
         self.bow_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+BOW', self.time_str)
         self.tf_dirname = os.path.join('outputs/baselines/', self.exp_name, 'baselines', 'LR+TFIDF', self.time_str)
@@ -32,39 +39,47 @@ class LR :
         train_tf = self.bowder.get_tfidf(docs)
 
         self.bow_classifier.fit(train_bow, train_data.y)
+        print("Fit BOW Classifier ...")
         self.tf_idf_classifier.fit(train_tf, train_data.y)
+        print("Fit TFIDF Classifier ...")
 
         train_bow = np.concatenate([train_bow.todense(), train_data.structured_data], axis=-1)
         train_tf = np.concatenate([train_tf.todense(), train_data.structured_data], axis=-1)
 
         self.bow_with_structured_classifier.fit(train_bow, train_data.y)
+        print("Fit BOW Structured Classifier ...")
         self.tf_idf_with_structured_classifier.fit(train_tf, train_data.y)
+        print("Fit TFIDF Structured Classifier ...")
 
     def evaluate(self, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
         bow = self.bowder.get_bow(docs)
         tf = self.bowder.get_tfidf(docs)
 
-        pred_bow = self.bow_classifier.predict_proba(bow)
-        pred_tf = self.tf_idf_classifier.predict_proba(tf)
+        pred_bow = normalise_output(np.array(self.bow_classifier.predict_proba(bow)))
+        pred_tf = normalise_output(np.array(self.tf_idf_classifier.predict_proba(tf)))
 
         bow = np.concatenate([bow.todense(), data.structured_data], axis=-1)
         tf = np.concatenate([tf.todense(), data.structured_data], axis=-1)
 
-        pred_bow_structured = self.bow_with_structured_classifier.predict_proba(bow)
-        pred_tf_structured = self.tf_idf_with_structured_classifier.predict_proba(tf)
+        pred_bow_structured = normalise_output(np.array(self.bow_with_structured_classifier.predict_proba(bow)))
+        pred_tf_structured = normalise_output(np.array(self.tf_idf_with_structured_classifier.predict_proba(tf)))
 
-        metric_bow = calc_metrics_classification(data.y, pred_bow)
-        metric_tf = calc_metrics_classification(data.y, pred_tf)
+        metric_bow = self.metrics(data.y, pred_bow)
+        metric_tf = self.metrics(data.y, pred_tf)
 
-        metric_bow_structured = calc_metrics_classification(data.y, pred_bow_structured)
-        metric_tf_structured = calc_metrics_classification(data.y, pred_tf_structured)
+        metric_bow_structured = self.metrics(data.y, pred_bow_structured)
+        metric_tf_structured = self.metrics(data.y, pred_tf_structured)
 
-        print("Bow", metric_bow)
-        print("TFIDF", metric_tf)
+        print("Bow")
+        print_metrics(metric_bow)
+        print("TFIDF") 
+        print_metrics(metric_tf)
 
-        print("Bow_structured", metric_bow_structured)
-        print("TFIDF_structured", metric_tf_structured)
+        print("Bow_structured")
+        print_metrics(metric_bow_structured)
+        print("TFIDF_structured")
+        print_metrics(metric_tf_structured)
 
         if save_results :
             os.makedirs(self.bow_dirname, exist_ok=True)
@@ -87,8 +102,9 @@ class LR :
             json.dump(metric_tf_structured, f)
             f.close()
 
-    def get_features(self, n=100) :
-        return [self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in np.argsort(self.tf_idf_classifier.coef_[0])[-n:]]
+    def get_features(self, estimator=0, n=100) :
+        return [self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in 
+                    np.argsort(self.tf_idf_classifier.estimators_[estimator].coef_[0])[-n:]]
 
 from sklearn.decomposition import LatentDirichletAllocation
 
