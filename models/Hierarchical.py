@@ -22,7 +22,7 @@ class ClassificationTrainer(Trainer) :
         
     def train(self, train_data) :
         generator = Hierarchical_Generator(train_data, batch_size=self.bsize, sort_and_shuffle=True)
-        target = generator.train_data.y
+        target = np.array(generator.train_data.y)
 
         class_weight = None
         if self.class_weight :

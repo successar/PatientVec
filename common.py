@@ -13,7 +13,7 @@ import torch
 from IPython.core.display import HTML, display
 from tqdm import tqdm_notebook
 
-from Experiments.experiments import experiments, hierarchical_experiments, structured_experiments
+from PatientVec.Experiments.config_exp import basic_configs, hierarchical_configs, structured_configs
 
 import logging
 logging.basicConfig(format='%(levelname)s - %(asctime)s - %(message)s', level=logging.INFO)
@@ -131,14 +131,14 @@ def push_latest_model(dirname, model_name) :
         json.dump(evaluate, open(filename, 'w'))
 
 def generate_latex_tables(data, keys_to_use) :
-    for e in (experiments + hierarchical_experiments):
+    for e in (basic_configs + hierarchical_configs):
         for use_structured in [True, False] :
             config = e(data, structured=use_structured)
             filename = config['exp_config']['exp_name']
             filename = os.path.join('outputs/', filename)
             push_latest_model(filename, config['exp_config']['exp_name'])
         
-    for e in (structured_experiments) :
+    for e in (structured_configs) :
         for use_structured in [True, False] :
             config = e(data, structured=use_structured, encodings=data.structured_columns)
             filename = config['exp_config']['exp_name']
