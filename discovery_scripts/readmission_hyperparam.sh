@@ -7,7 +7,9 @@
 #SBATCH --mem=40Gb                               
 #SBATCH --time=23:59:00                            
 #SBATCH --output=readmission_hyperparam_result.%j.out               
-#SBATCH --error=readmission_hyperparam_result.%j.err                
+#SBATCH --error=readmission_hyperparam_result.%j.err            
+#SBATCH --mail-type=ALL    
+#SBATCH --mail-user=successar@gmail.com
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:k40m:1
 
