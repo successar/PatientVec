@@ -13,6 +13,8 @@ import torch
 from IPython.core.display import HTML, display
 from tqdm import tqdm_notebook
 
+from Experiments.experiments import experiments, hierarchical_experiments, structured_experiments
+
 import logging
 logging.basicConfig(format='%(levelname)s - %(asctime)s - %(message)s', level=logging.INFO)
 
@@ -109,6 +111,11 @@ def push_graphs_to_main_directory(model, name) :
 import time
 from collections import defaultdict
 
+def get_latest_model(dirname) :
+    dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
+    return os.path.join(dirname, max_dir)
+
 def push_latest_model(dirname, model_name) :
     exps = defaultdict(list)
     for (path, dirs, files) in os.walk(dirname) :
@@ -122,3 +129,46 @@ def push_latest_model(dirname, model_name) :
         filename = 'latex_evals/' + model_name + '.evaluate.json'
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         json.dump(evaluate, open(filename, 'w'))
+
+def generate_latex_tables(data, keys_to_use) :
+    for e in (experiments + hierarchical_experiments):
+        for use_structured in [True, False] :
+            config = e(data, structured=use_structured)
+            filename = config['exp_config']['exp_name']
+            filename = os.path.join('outputs/', filename)
+            push_latest_model(filename, config['exp_config']['exp_name'])
+        
+    for e in (structured_experiments) :
+        for use_structured in [True, False] :
+            config = e(data, structured=use_structured, encodings=data.structured_columns)
+            filename = config['exp_config']['exp_name']
+            filename = os.path.join('outputs/', filename)
+            push_latest_model(filename, config['exp_config']['exp_name'])
+            
+        
+    for e in os.listdir('outputs/' + data.name + '/baselines/') :
+        filename = os.path.join('outputs/' + data.name + '/baselines/', e)
+        push_latest_model(filename, os.path.join(data.name + '/baselines/', e))
+
+    dataset = data.name
+    dataset_path = os.path.join('latex_evals', dataset)
+    output_path = os.path.join('Text-encoding-EHR/results/', dataset)
+    os.makedirs(output_path, exist_ok=True)
+
+    dirs = os.listdir(dataset_path)
+
+    for d in dirs :
+        subpath = os.path.join(dataset_path, d)
+        output_file = os.path.join(output_path, d + '.csv')
+        dfs = []
+        for f in sorted(os.listdir(subpath)) :
+            if os.path.isfile(os.path.join(subpath, f)) :
+                d = json.load(open(os.path.join(subpath, f)))
+                results = {k:d['results'][k] for k in keys_to_use}
+                results['Method'] = f[:-14].replace('+', ' +').replace('_', ':')
+                dfs.append(pd.DataFrame([results]))
+            else :
+                logging.error("%s not a file", f)
+        
+        dfs = pd.concat(dfs)
+        dfs.to_csv(output_file, columns=['Method'] + keys_to_use, index=False)
