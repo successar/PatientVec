@@ -41,6 +41,7 @@ class Dataset() :
         for labelfield in label_list :
             assert labelfield in self.dataframe.columns, logging.error("Labelfield %s not in dataframe columns", labelfield)
         label_cols = np.array([list(self.dataframe[l]) for l in label_list]).T
+        self.y_header = label_list
         self.y = label_cols
         
         self.output_size = output_size

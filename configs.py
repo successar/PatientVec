@@ -44,6 +44,16 @@ def make_structured(config, structured_dim) :
 
     return config
 
+def modify_training_params(config, optimiser, lr, weight_decay) :
+    config['training_config']['type'] = optimiser
+    for g in config['training_config']['groups'] :
+        g[1]['lr'] = lr
+        g[1]['weight_decay'] = weight_decay
+
+    config['exp_config']['exp_name'] += '/hyperparams/lr=' + str(lr) + '+weight_decay=' + str(weight_decay)
+
+    return config
+
 ############### Seq Classifier Experiment ###################################
 
 def seq_classifier_experiment(data, encoder_params) :

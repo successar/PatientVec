@@ -20,11 +20,11 @@ class LR :
         self.exp_name = config['exp_name']
 
         self.bowder = BoWder(vocab=vocab, stop_words=stop_words)
-        self.bow_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
-        self.tf_idf_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
+        self.bow_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
+        self.tf_idf_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
 
-        self.bow_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
-        self.tf_idf_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
+        self.bow_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
+        self.tf_idf_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
 
         self.bow_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+BOW', self.time_str)
         self.tf_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+TFIDF', self.time_str)
@@ -102,9 +102,23 @@ class LR :
             json.dump(metric_tf_structured, f)
             f.close()
 
-    def get_features(self, estimator=0, n=100) :
+    def get_features(self, classifier, estimator=0, n=100) :
         return [self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in 
-                    np.argsort(self.tf_idf_classifier.estimators_[estimator].coef_[0])[-n:]]
+                    np.argsort(classifier.estimators_[estimator].coef_[0][:len(self.bowder.words_to_keep)])[-n:]]
+
+    def print_all_features(self, n=20) :
+        for i in range(len(self.bow_classifier.estimators_)) :
+            print(" ".join(self.get_features(self.bow_classifier, estimator=i, n=n)))
+            print('-'*10)
+            print(" ".join(self.get_features(self.tf_idf_classifier, estimator=i, n=n)))
+            print('-'*10)
+            print(" ".join(self.get_features(self.bow_with_structured_classifier, estimator=i, n=n)))
+            print('-'*10)
+            print(" ".join(self.get_features(self.tf_idf_with_structured_classifier, estimator=i, n=n)))
+            print('-'*10)
+
+            print('='*25)
+
 
 from sklearn.decomposition import LatentDirichletAllocation
 
