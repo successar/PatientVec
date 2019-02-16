@@ -4,6 +4,7 @@ from math import ceil
 
 from tqdm import tqdm_notebook
 from sklearn.feature_extraction.text import TfidfTransformer
+from sklearn.preprocessing import normalize
 from scipy.sparse import csr_matrix
 
 import nltk
@@ -14,7 +15,7 @@ from collections import Counter
 class Vectorizer :
     def __init__(self, vocab=None, boundaries=True):
         self.vocab = vocab
-        self.boundaries = True
+        self.boundaries = boundaries
 
     def map_to_idxs(self, text, boundaries=True) :
         tokens = self.vocab.tokenizer(text) if type(text) == str else text
@@ -48,12 +49,13 @@ class Vectorizer :
         return pickle.load(open(filename, 'rb'))
 
 class BoWder :
-    def __init__(self, vocab=None, stop_words=False) :
+    def __init__(self, vocab=None, stop_words=False, norm=None) :
         self.vocab = vocab 
+        self.norm = norm
 
         self.words_to_remove = set([self.vocab.PAD, self.vocab.SOS, self.vocab.UNK, self.vocab.EOS])
         if stop_words :
-           self.words_to_remove = (set(stopwords.words('english')) & set(self.vocab.word2idx.keys())) | self.words_to_remove
+            self.words_to_remove = (set(stopwords.words('english')) & set(self.vocab.word2idx.keys())) | self.words_to_remove
 
         self.idxs_to_remove = set([self.vocab.word2idx[x] for x in list(self.words_to_remove)])
         self.words_to_keep = list(set(self.vocab.word2idx.keys()) - self.words_to_remove)
@@ -61,7 +63,7 @@ class BoWder :
         self.map_vocab_to_bow = {self.vocab.word2idx[k]:i for i, k in enumerate(self.words_to_keep)}
         self.map_bow_to_vocab = {v:k for k, v in self.map_vocab_to_bow.items()}
 
-    def get_bow(self, X) :
+    def generate_bow(self, X) :
         bow = np.zeros((len(X), len(self.words_to_keep)))
         for i, x in enumerate(tqdm_notebook(X)) :
             x = set(x) - self.idxs_to_remove
@@ -69,16 +71,24 @@ class BoWder :
             for w, c in counts.items() :
                 bow[i, self.map_vocab_to_bow[w]] += c
 
-        return csr_matrix(bow)
+        bow = csr_matrix(bow)
+        return bow
 
     def fit_tfidf(self, X) :
-        bow = self.get_bow(X)
-        self.tfidftransform = TfidfTransformer()
+        bow = self.generate_bow(X)
+        self.tfidftransform = TfidfTransformer(norm=self.norm)
         self.tfidftransform.fit(bow)
 
     def get_tfidf(self, X) :
-        bow = self.get_bow(X)
+        bow = self.generate_bow(X)
         return self.tfidftransform.transform(bow)
+    
+    def get_bow(self, X) :
+        bow = self.generate_bow(X)
+        if self.norm is not None :
+            bow = normalize(bow, norm=self.norm, copy=False)
+            
+        return bow
 
 
 class DataHolder() :

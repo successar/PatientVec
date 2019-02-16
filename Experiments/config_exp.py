@@ -1,4 +1,4 @@
-from PatientVec.configs import *
+from PatientVec.Experiments.configs import *
 
 def LSTM(data, structured) :
     encoder_params = lstm_encoder_params(hidden_size=128)
@@ -46,6 +46,8 @@ def CNN_with_attention(data, structured) :
     return config
 
 basic_configs = [Average, LSTM, CNN, Average_with_attention, LSTM_with_attention, CNN_with_attention]
+vanilla_configs = [Average, LSTM, CNN]
+attention_configs = [Average_with_attention, LSTM_with_attention, CNN_with_attention]
 
 def Hierarchical_LSTM_with_attention(data, structured) :
     word_encoder_params = lstm_encoder_params(hidden_size=128)

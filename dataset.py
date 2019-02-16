@@ -5,7 +5,7 @@ import numpy as np
 import os
 from PatientVec.preprocess.vocabulary import Vocabulary
 from PatientVec.preprocess.embedder import PretrainedEmbedding
-from PatientVec.preprocess.vectorizer import DataHolder
+from PatientVec.preprocess.vectorizer import DataHolder, BoWder
 from PatientVec.preprocess.field_processor import field_processors
 
 import logging
@@ -46,6 +46,20 @@ class Dataset() :
         
         self.output_size = output_size
         self.predictor_type = predictor
+
+    def generate_bowder(self, data, stop_words=True, norm=None) :
+        self.bowder = BoWder(vocab=self.vocab, stop_words=stop_words, norm=norm)
+        docs = [[y for x in d for y in x] for d in data.X]
+        self.bowder.fit_tfidf(docs)
+
+    def get_vec_encoding(self, data, _type='bow') :
+        docs = [[y for x in d for y in x] for d in data.X]
+        if _type == 'bow' :
+            return self.bowder.get_bow(docs)
+        elif _type == 'tfidf' :
+            return self.bowder.get_tfidf(docs)
+        else :
+            raise LookupError("No such encoding")
 
     def generate_encoded_field(self, field, encoding_type, encoding_args=None) :
         assert field in self.dataframe.columns, logging.error("%s not in dataframe columns", field)

@@ -1,5 +1,6 @@
 from PatientVec.preprocess.vectorizer import BoWder
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, SGDClassifier
+
 from sklearn.multioutput import MultiOutputClassifier
 from PatientVec.metrics import *
 import time, json
@@ -15,22 +16,25 @@ class LR :
         vocab = config['vocab']
         stop_words = config.get('stop_words', False)
         self.metrics = metrics_map[config['type']]
+        self.norm = config.get('norm', None)
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
 
-        self.bowder = BoWder(vocab=vocab, stop_words=stop_words)
-        self.bow_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
-        self.tf_idf_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
+        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm)
+        
+        gen_classifier = lambda : MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
+        # gen_classifier = lambda : MultiOutputClassifier(SGDClassifier(class_weight='balanced', penalty='l1', loss='log', alpha=0.5), n_jobs=8)
+        self.bow_classifier = gen_classifier()
+        self.tf_idf_classifier = gen_classifier()
+        self.bow_with_structured_classifier = gen_classifier()
+        self.tf_idf_with_structured_classifier = gen_classifier()
 
-        self.bow_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
-        self.tf_idf_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
-
-        self.bow_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+BOW', self.time_str)
-        self.tf_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+TFIDF', self.time_str)
-
-        self.bow_structured_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+BOW+Structured', self.time_str)
-        self.tf_structured_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+TFIDF+Structured', self.time_str)
+        gen_dirname = lambda x : os.path.join('outputs/', self.exp_name, 'baselines', x, self.time_str)
+        self.bow_dirname = gen_dirname('LR+BOW+norm='+str(self.norm))
+        self.tf_dirname = gen_dirname('LR+TFIDF+norm='+str(self.norm))
+        self.bow_structured_dirname = gen_dirname('LR+BOW+norm=' + str(self.norm) + '+Structured')
+        self.tf_structured_dirname = gen_dirname('LR+TFIDF+norm=' + str(self.norm) + '+Structured')
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]
@@ -43,64 +47,38 @@ class LR :
         self.tf_idf_classifier.fit(train_tf, train_data.y)
         print("Fit TFIDF Classifier ...")
 
-        train_bow = np.concatenate([train_bow.todense(), train_data.structured_data], axis=-1)
-        train_tf = np.concatenate([train_tf.todense(), train_data.structured_data], axis=-1)
+        # train_bow = np.concatenate([train_bow.todense(), train_data.structured_data], axis=-1)
+        # train_tf = np.concatenate([train_tf.todense(), train_data.structured_data], axis=-1)
 
-        self.bow_with_structured_classifier.fit(train_bow, train_data.y)
-        print("Fit BOW Structured Classifier ...")
-        self.tf_idf_with_structured_classifier.fit(train_tf, train_data.y)
-        print("Fit TFIDF Structured Classifier ...")
+        # self.bow_with_structured_classifier.fit(train_bow, train_data.y)
+        # print("Fit BOW Structured Classifier ...")
+        # self.tf_idf_with_structured_classifier.fit(train_tf, train_data.y)
+        # print("Fit TFIDF Structured Classifier ...")
+        
+    def evaluate_classifier(self, name, classifier, X, y, dirname, save_results) :
+        pred = normalise_output(np.array(classifier.predict_proba(X)))
+        metrics = self.metrics(y, pred)
+        print(name)
+        print_metrics(metrics)
+        if save_results :
+            os.makedirs(dirname, exist_ok=True)
+            f = open(dirname + '/evaluate.json', 'w')
+            json.dump(metrics, f)
+            f.close()
 
     def evaluate(self, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
         bow = self.bowder.get_bow(docs)
         tf = self.bowder.get_tfidf(docs)
 
-        pred_bow = normalise_output(np.array(self.bow_classifier.predict_proba(bow)))
-        pred_tf = normalise_output(np.array(self.tf_idf_classifier.predict_proba(tf)))
-
-        bow = np.concatenate([bow.todense(), data.structured_data], axis=-1)
-        tf = np.concatenate([tf.todense(), data.structured_data], axis=-1)
-
-        pred_bow_structured = normalise_output(np.array(self.bow_with_structured_classifier.predict_proba(bow)))
-        pred_tf_structured = normalise_output(np.array(self.tf_idf_with_structured_classifier.predict_proba(tf)))
-
-        metric_bow = self.metrics(data.y, pred_bow)
-        metric_tf = self.metrics(data.y, pred_tf)
-
-        metric_bow_structured = self.metrics(data.y, pred_bow_structured)
-        metric_tf_structured = self.metrics(data.y, pred_tf_structured)
-
-        print("Bow")
-        print_metrics(metric_bow)
-        print("TFIDF") 
-        print_metrics(metric_tf)
-
-        print("Bow_structured")
-        print_metrics(metric_bow_structured)
-        print("TFIDF_structured")
-        print_metrics(metric_tf_structured)
-
-        if save_results :
-            os.makedirs(self.bow_dirname, exist_ok=True)
-            f = open(self.bow_dirname + '/evaluate.json', 'w')
-            json.dump(metric_bow, f)
-            f.close()
-
-            os.makedirs(self.tf_dirname, exist_ok=True)
-            f = open(self.tf_dirname + '/evaluate.json', 'w')
-            json.dump(metric_tf, f)
-            f.close()
-
-            os.makedirs(self.bow_structured_dirname, exist_ok=True)
-            f = open(self.bow_structured_dirname + '/evaluate.json', 'w')
-            json.dump(metric_bow_structured, f)
-            f.close()
-
-            os.makedirs(self.tf_structured_dirname, exist_ok=True)
-            f = open(self.tf_structured_dirname + '/evaluate.json', 'w')
-            json.dump(metric_tf_structured, f)
-            f.close()
+        self.evaluate_classifier('BOW', self.bow_classifier, bow, data.y, self.bow_dirname, save_results)
+        self.evaluate_classifier('TFIDF', self.tf_idf_classifier, tf, data.y, self.tf_dirname, save_results)
+        
+        # bow = np.concatenate([bow.todense(), data.structured_data], axis=-1)
+        # tf = np.concatenate([tf.todense(), data.structured_data], axis=-1)
+        
+        # self.evaluate_classifier('BOW+Structured', self.bow_with_structured_classifier, bow, data.y, self.bow_structured_dirname, save_results)
+        # self.evaluate_classifier('TFIDF+Structured', self.tf_idf_with_structured_classifier, tf, data.y, self.tf_structured_dirname, save_results)
 
     def get_features(self, classifier, estimator=0, n=100) :
         return [self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in 

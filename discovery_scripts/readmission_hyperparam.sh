@@ -13,4 +13,4 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:k40m:1
 
-srun python /home/jain.sar/PatientVec/Readmission_hyperparams.py --data_dir="/scratch/jain.sar/PatientVec" --output_dir="/scratch/jain.sar/PatientVec/outputs" --lr=$lr --reg=$reg
+srun python /home/jain.sar/PatientVec/Readmission_hyperparams.py --data_dir="/scratch/jain.sar/PatientVec" --output_dir="/scratch/jain.sar/PatientVec/outputs" --lr=$lr --reg=$reg --exps=$exps

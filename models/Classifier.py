@@ -16,6 +16,47 @@ from .utils import Holder, HierHolder
 from typing import Dict
 from allennlp.common import Params
 
+@Model.register("vec_classifier")
+class VectorClassifier(nn.Module, from_params.FromParams) :
+    def __init__(self, decoder: FeedForward, 
+                        predictor: Predictor, 
+                        structured: Dict,
+                        reg: Dict) :
+        super().__init__()
+        self.decoder = decoder
+        self.predictor = predictor
+        self.structured = structured
+        self.reg = reg
+
+    def forward(self, batch) :
+        h = torch.Tensor(batch.X).cuda()
+
+        if self.structured['use_structured'] :
+            conditional = torch.Tensor(batch.structured_data).cuda()
+            h = torch.cat([h, conditional], dim=-1)
+
+        potential = self.decoder(h)
+
+        target = torch.Tensor(batch.y).cuda() if batch.have('y') else None
+        weight = batch.weight if batch.have('weight') else None
+
+        predict, loss = self.predictor(potential, target, weight)
+
+        if self.reg['type'] == 'l1' :
+            loss += self.reg['weight'] * torch.abs(self.decoder._linear_layers[-1].weight).sum()
+
+        batch.outputs = { "predict" : predict, "loss" : loss }
+
+    @classmethod
+    def from_params(cls, params: Params) :
+        if params['structured']['use_structured'] :
+            params['decoder']['input_dim'] += params['structured']['structured_dim']
+
+        decoder = FeedForward.from_params(params.pop('decoder'))
+        predictor = Predictor.from_params(params.pop('predictor'))
+
+        return cls(decoder=decoder, predictor=predictor, structured=params.pop('structured'), reg=params.pop('reg'))
+
 @Model.register("seq_classifier")
 class SequenceClassifier(nn.Module, from_params.FromParams) :
     def __init__(self, embedder: Embedder, 

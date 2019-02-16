@@ -113,8 +113,16 @@ from collections import defaultdict
 
 def get_latest_model(dirname) :
     dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    if len(dirs) == 0 :
+        return None
     max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
     return os.path.join(dirname, max_dir)
+
+from metrics import print_metrics
+def print_results_from_model(dirname) :
+    assert 'evaluate.json' in os.listdir(dirname)
+    metrics = json.load(open(os.path.join(dirname, 'evaluate.json')))
+    print_metrics(metrics)
 
 def push_latest_model(dirname, model_name) :
     exps = defaultdict(list)

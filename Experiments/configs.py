@@ -1,4 +1,4 @@
-from PatientVec.config_units import *
+from PatientVec.Experiments.config_units import *
 
 def get_basic_model_config(data, exp_name) :
     config = {
@@ -92,6 +92,20 @@ def hierarchical_experiment(data, word_encoder_params, sentence_encoder_params, 
     config['model']['word_attention'] = word_attention_params['params']
     config['model']['sentence_encoder'] = sentence_encoder_params['params']
     config['model']['sentence_attention'] = sentence_attention_params['params']
+    return config
+
+def vector_experiment(data) :
+    config = get_basic_model_config(data, data.name + '/Test_TFIDF')
+    config['model']['type'] = 'vec_classifier'
+    del config['model']['embedder']
+    config['model']['decoder']['input_dim'] = len(data.bowder.words_to_keep)
+    config['model']['decoder']['num_layers'] = 1
+    config['model']['decoder']['hidden_dims'] = [data.output_size]
+    config['model']['decoder']['activations'] = ['linear']
+    config['training_config']['common']['bsize'] = 256
+    config['model']['reg'] = { "type" : "l1", "weight" : 0.5}
+    config = make_structured(config, data.structured_dim)
+    config = modify_training_params(config, 'Adam', 0.001, 0.0)
     return config
 
 

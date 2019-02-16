@@ -1,16 +1,16 @@
 from PatientVec.dataloaders import readmission_dataset
-from PatientVec.Experiments.training_exps import basic_experiments, hierarchical_experiments, structured_attention_experiments
+from PatientVec.Experiments.hyperparam_exps import experiment_types
 
 import argparse
-parser = argparse.ArgumentParser(description='Run Diagnosis experiments')
+parser = argparse.ArgumentParser(description='Run Readmission Hyperparams experiments')
 parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument('--display', dest='display', action='store_true')
 parser.add_argument("--output_dir", type=str)
-parser.add_argument("--mock", dest='mock', action='store_true')
 parser.add_argument('--lr', type=float, required=True)
 parser.add_argument('--reg', type=float, required=True)
+parser.add_argument('--exps', type=str, required=True)
 
-from PatientVec.configs import modify_training_params
+from PatientVec.Experiments.configs import modify_training_params
 
 args = parser.parse_args()
 def modify_config(c) :
@@ -20,6 +20,5 @@ def modify_config(c) :
 args.modify_config = modify_config
 
 data = readmission_dataset(args)
-basic_experiments(data, args)
-# hierarchical_experiments(data, args)
-structured_attention_experiments(data, args)
+experiment = experiment_types[args.exps]
+experiment(data, args)

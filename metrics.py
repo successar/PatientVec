@@ -64,6 +64,8 @@ def print_metrics(metrics) :
 
     d = defaultdict(dict)
     for k, v in tabular.items() :
+        if not k.startswith('label_') :
+            d[k.split('/', 1)[0]][k.split('/', 1)[1]] = v
         if '/1/' in k :
             d[k.split('/', 1)[0]][k.split('/', 1)[1]] = v
 

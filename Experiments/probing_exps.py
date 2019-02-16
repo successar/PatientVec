@@ -27,7 +27,7 @@ def basic_experiments(data, args) :
             evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
             _ = evaluator.evaluate(dev_data, save_results=True)
             print('='*300)
-            
+
 def hierarchical_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90)
 

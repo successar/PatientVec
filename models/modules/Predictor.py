@@ -10,9 +10,6 @@ class Predictor(nn.Module, Registrable) :
 
 @Predictor.register("binary")
 class Binary_Predictor(Predictor) :
-    def __init__(self) :
-        super().__init__()
-
     def forward(self, potential, target, weight) :
         predictions = torch.sigmoid(potential)
         if target is not None :
@@ -25,9 +22,6 @@ class Binary_Predictor(Predictor) :
 
 @Predictor.register("multiclass")
 class Multiclass_predictor(Predictor) :
-    def __init__(self) :
-        super().__init__()
-
     def forward(self, potential, target, weight) :
         predictions = nn.Softmax(dim=-1)(potential)
         if target is not None :
@@ -39,9 +33,6 @@ class Multiclass_predictor(Predictor) :
 
 @Predictor.register("regression")
 class Regression_predictor(Predictor) :
-    def __init__(self) :
-        super().__init__()
-
     def forward(self, potential, target, weight) :
         predictions = potential
         if target is not None :
@@ -53,9 +44,6 @@ class Regression_predictor(Predictor) :
 
 @Predictor.register("multilabel")
 class Multilabel_predictor(Predictor) :
-    def __init__(self) :
-        super().__init__()
-
     def forward(self, potential, target, weight) :
         # weight : (C, 2), potential : (N, C), target : (N, C)
         predictions = torch.sigmoid(potential)
