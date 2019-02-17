@@ -7,6 +7,7 @@ preprocess/Mortality
 preprocess/IMDB
 preprocess/WhatInNote
 data
+mimic_github_repos
 Text-encoding-EHR
 .vscode
 latex_evals/

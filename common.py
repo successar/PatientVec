@@ -123,6 +123,19 @@ def print_results_from_model(dirname) :
     assert 'evaluate.json' in os.listdir(dirname)
     metrics = json.load(open(os.path.join(dirname, 'evaluate.json')))
     print_metrics(metrics)
+    
+def clean_latest_model(dirname) :
+    timestamped_dirs = [d for d in os.listdir(dirname) if 'config.json' in os.listdir(os.path.join(dirname, d))]
+    evaluated_dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    if len(timestamped_dirs) == 0:
+        return -1
+    max_dir = max(evaluated_dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
+    non_max_dirs = [d for d in timestamped_dirs if d != max_dir]
+    for d in non_max_dirs :
+        shutil.rmtree(os.path.join(dirname, d))
+        
+    print(os.listdir(dirname))
+    
 
 def push_latest_model(dirname, model_name) :
     exps = defaultdict(list)

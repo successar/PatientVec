@@ -1,7 +1,11 @@
 import re
 import spacy
 
-nlp = spacy.load('en', disable=['parser', 'tagger', 'ner'])
+# nlp = spacy.load('en', disable=['parser', 'tagger', 'ner'])
+# nlp.max_length = 4000000
+# nlp.add_pipe('sentencizer')
+
+nlp = spacy.load('en')
 nlp.max_length = 4000000
 
 def cleaner(text, spacy=True, qqq=True, lower=True) :
@@ -54,13 +58,20 @@ def cleaner_whatinnote(text):
 
     text = re.sub('_+', '_', text)
 
-    text = [t.text.lower() for t in nlp(text)]
-    text = " ".join(text)
+    sentences = []
+    for s in nlp(text).sents :
+        s = " ".join([t.text.lower() for t in s])
+        s = re.sub(r'(\d+(\.\d+)?)', r' \1 ', s)
+        s = re.sub(regex_alphanum , r' \1 ', s)
+        s = re.sub(r'\s+', ' ', s.strip())
+        if re.match(r'\d+\s*\.', s) :
+            continue
+        sentences.append(s)
+    
+    text = " <ExpSBD> ".join(sentences)
     
 #     text = ['qqq' if any(char.isdigit() for char in word) else word for word in text.split(' ')]
-    text = re.sub(r'(\d+(\.\d+)?)', r' \1 ', text)
-    text = re.sub(regex_alphanum , r' \1 ', text)
-    text = re.sub(r'\s+', ' ', text.strip())
+    
     
     text = text.split(' ')
     return " ".join(text).strip()
