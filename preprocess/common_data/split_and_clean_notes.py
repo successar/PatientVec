@@ -4,6 +4,7 @@ parser.add_argument("--iter", type=int, required=True)
 parser.add_argument('--chunk', type=int, required=True)
 parser.add_argument('--notes_file', type=str, required=True)
 parser.add_argument("--output_dir", type=str, required=True)
+args = parser.parse_args()
 
 import pandas as pd
 from PatientVec.preprocess.cleaners import cleaner_whatinnote
