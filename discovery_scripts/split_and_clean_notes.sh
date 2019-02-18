@@ -3,7 +3,7 @@
 #SBATCH --job-name=split_and_clean_mimic                    
 #SBATCH --nodes=1                                 
 #SBATCH --tasks-per-node=1                        
-#SBATCH --cpus-per-task=1                         
+#SBATCH --cpus-per-task=8                         
 #SBATCH --mem=20Gb                               
 #SBATCH --output=split_and_clean_mimic_result.%j.out               
 #SBATCH --error=split_and_clean_mimic_result.%j.err            
