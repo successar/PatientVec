@@ -43,9 +43,8 @@ def cleaner_whatinnote(text):
     text = text.strip()
 
     # remove phi tags
-    tags = re.findall('\[\*\*.*?\*\*\]', text)
-    for tag in set(tags):
-        text = text.replace(tag, ' ')
+    tag_pattern = re.compile(r'\[\*\*([^*]*)\*\*\]')
+    text = tag_pattern.sub(lambda m : ('deid_' + m.groups()[0] + '_deid').replace(' ', '_'), text)
 
     # collapse phrases (including diagnoses) into single tokens
     if text != text.upper():
@@ -64,6 +63,7 @@ def cleaner_whatinnote(text):
         s = re.sub(r'(\d+(\.\d+)?)', r' \1 ', s)
         s = re.sub(regex_alphanum , r' \1 ', s)
         s = re.sub(r'\s+', ' ', s.strip())
+        s = re.sub(r'deid_(.*?)_deid', lambda s : s.group(0).replace(' ', '').replace('deid_', '[**').replace('_deid', '**]'), s)
         if re.match(r'\d+\s*\.', s) :
             continue
         sentences.append(s)
