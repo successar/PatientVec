@@ -7,7 +7,9 @@ parser.add_argument("--output_dir", type=str, required=True)
 args = parser.parse_args()
 
 import logging
-logging.basicConfig(format='%(levelname)s - %(asctime)s - %(message)s', level=logging.INFO)
+import os
+logging.basicConfig(filename=os.path.join(args.output_dir, 'notes_chunk_'+str(args.iter) + '.log'), filemode='a',
+                    format='%(levelname)s - %(asctime)s - %(message)s', level=logging.INFO)
 
 import pandas as pd
 from PatientVec.preprocess.cleaners import cleaner_whatinnote
