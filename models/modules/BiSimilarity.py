@@ -41,7 +41,8 @@ class BiBilinearSimilarity(BiSimilarity) :
         self.activation = activation()
 
     def forward(self, tensor_1, tensor_2) :
-        sim_1 = self.linear_1(tensor_1, tensor_2.expand(-1, tensor_1.shape[1], -1))
+        mul_1 = torch.einsum('amn,bn->bam', self.linear_1.weight, tensor_2.squeeze(1))
+        sim_1 = torch.einsum('bkm,bam->bka', tensor_1, mul_1)
         sim_2 = self.linear_2(self.activation(sim_1)).squeeze(-1)
 
         return sim_2
