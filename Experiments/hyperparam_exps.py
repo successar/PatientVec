@@ -1,7 +1,7 @@
 from PatientVec.models.Vanilla import ClassificationTrainer as BasicCT
 from PatientVec.models.Hierarchical import ClassificationTrainer as HierCT
 from PatientVec.trainer import Trainer, Evaluator
-from PatientVec.Experiments.config_exp import vanilla_configs, attention_configs, hierarchical_configs, structured_configs
+from PatientVec.Experiments.modifiable_config_exp import vanilla_configs, attention_configs, hierarchical_configs, structured_configs
 
 def get_basic_data(data, truncate=90, encodings=None) :
     train_data = data.filter_data_length(data.get_data('train', structured=True, encodings=encodings), truncate=truncate)
@@ -13,7 +13,7 @@ def vanilla_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90)
 
     for e in vanilla_configs :
-        config = e(data, structured=True)
+        config = e(data, structured=True, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -31,7 +31,7 @@ def attention_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90)
 
     for e in attention_configs :
-        config = e(data, structured=True)
+        config = e(data, structured=True, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -49,7 +49,7 @@ def hierarchical_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90)
 
     for e in hierarchical_configs :
-        config = e(data, structured=True)
+        config = e(data, structured=True, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -67,7 +67,7 @@ def structured_attention_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90, encodings=data.structured_columns)
 
     for e in structured_configs :
-        config = e(data, structured=True, encodings=data.structured_columns)
+        config = e(data, structured=True, encodings=data.structured_columns, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :

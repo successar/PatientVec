@@ -18,6 +18,6 @@ class Attention(nn.Module, FromParams) :
     def forward(self, tensor_1, tensor_2, mask) :
         sim_1 = self.similarity(tensor_1, tensor_2) #(B, *)
         sim_1.masked_fill_(mask.byte(), float("-inf"))
-        attn_1 = self.normaliser(dim=-1)(sim_1)
+        attn_1 = self.normaliser(sim_1)
 
         return attn_1
