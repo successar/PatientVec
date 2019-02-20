@@ -32,7 +32,7 @@ class PretrainedEmbedding() :
     def save(self, dirname) :
         os.makedirs(dirname, exist_ok=True)
         matrix_filepath = os.path.join(dirname, 'embedding_matrix.npy')
-        np.save(filepath, self.embeddings)
+        np.save(matrix_filepath, self.embeddings)
         
         mapping_filepath = os.path.join(dirname, 'embedding_mapping.p')
         pickle.dump(self.idx2word, open(mapping_filepath, 'wb'))

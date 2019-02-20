@@ -31,7 +31,7 @@ class Vectorizer :
 
     def texts_to_sequences(self, texts, boundaries=True):
         sequences = []
-        for t in tqdm_notebook(texts) :
+        for t in texts :
             sequences.append(self.map_to_idxs(t, boundaries))
         return sequences
 
