@@ -36,3 +36,39 @@ def diagnosis_dataset(args) :
     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
 
     return data
+
+def hip_dataset(args) :
+    data = Dataset(name='HipSurgery', dirname=os.path.join(args.data_dir, 'preprocess/HipSurgery/'))
+
+    labellist = ['Target']
+    data.generate_labels(labellist, len(labellist), 'binary')
+    data.save_on_metric = 'roc_auc'
+    data.metrics_type = 'classifier'
+
+#     data.generate_encoded_field('gender_y', 'onehot')
+#     data.generate_encoded_field('age_y', 'onehot')
+#     data.generate_encoded_field('ethnicity_y', 'onehot')
+#     features = [x for x in data.dataframe.columns if x.startswith('feature')]
+#     for f in features :
+#         data.generate_encoded_field(f, 'trivial')
+#     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    
+    return data
+
+def knee_dataset(args) :
+    data = Dataset(name='KneeSurgery', dirname=os.path.join(args.data_dir, 'preprocess/KneeSurgery/'))
+
+    labellist = ['Target']
+    data.generate_labels(labellist, len(labellist), 'binary')
+    data.save_on_metric = 'roc_auc'
+    data.metrics_type = 'classifier'
+
+#     data.generate_encoded_field('gender_y', 'onehot')
+#     data.generate_encoded_field('age_y', 'onehot')
+#     data.generate_encoded_field('ethnicity_y', 'onehot')
+#     features = [x for x in data.dataframe.columns if x.startswith('feature')]
+#     for f in features :
+#         data.generate_encoded_field(f, 'trivial')
+#     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    
+    return data

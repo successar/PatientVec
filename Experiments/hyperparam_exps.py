@@ -3,9 +3,9 @@ from PatientVec.models.Hierarchical import ClassificationTrainer as HierCT
 from PatientVec.trainer import Trainer, Evaluator
 from PatientVec.Experiments.modifiable_config_exp import vanilla_configs, attention_configs, hierarchical_configs, structured_configs
 
-def get_basic_data(data, truncate=90, encodings=None) :
-    train_data = data.filter_data_length(data.get_data('train', structured=True, encodings=encodings), truncate=truncate)
-    dev_data = data.filter_data_length(data.get_data('dev', structured=True, encodings=encodings), truncate=truncate)
+def get_basic_data(data, truncate=90, structured=True, encodings=None) :
+    train_data = data.filter_data_length(data.get_data('train', structured=structured, encodings=encodings), truncate=truncate)
+    dev_data = data.filter_data_length(data.get_data('dev', structured=structured, encodings=encodings), truncate=truncate)
 
     return train_data, dev_data
     
