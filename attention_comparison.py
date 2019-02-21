@@ -40,3 +40,19 @@ def emd(a1, a2) :
         emds.append(abs(emd))
     
     return emds, sum(emds)
+
+def get_top_n_attended_words(X, attn, n=20) :
+    if type(X[0]) == list :
+        X = [x for y in X for x in y]
+    assert len(X) == len(attn), print(len(X), len(attn))
+    top_feat_1 = np.argsort(attn)[-n:]
+    top_feat_1 = set([X[i] for i in top_feat_1])
+    return top_feat_1
+
+from collections import Counter
+def get_common_attended_words(Xs, attns, n=20) :
+    c = Counter()
+    for X, attn in zip(Xs, attns) :
+        f = list(get_top_n_attended_words(X, attn, n))
+        c.update(f)
+    return c
