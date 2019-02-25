@@ -18,10 +18,12 @@ class ClassificationTrainer(Trainer) :
 
     def generate_optimizer(self) :
         self.class_weight = self.training_config['common'].get("class_weight", False)
+        self.balanced = self.training_config['common'].get('balanced', False)
+        assert not (self.class_weight & self.balanced), "Both class weight and balanced set ..."
         super().generate_optimizer()
         
     def train(self, train_data) :
-        generator = Concatenated_Generator(train_data, batch_size=self.bsize)
+        generator = Concatenated_Generator(train_data, batch_size=self.bsize, balanced=self.balanced)
         target = np.array(generator.train_data.y)
 
         class_weight = None

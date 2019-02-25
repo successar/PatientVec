@@ -130,12 +130,21 @@ class Dataset() :
         docs = [[y for x in d for y in x] for d in data.X]
         total_sentence_length = [len(x) for x in docs]
         
-        filter_perc = np.percentile(total_sentence_length, truncate)
+        filter_perc = int(np.percentile(total_sentence_length, truncate))
         logging.info("Maximum Sentence Length %f , %d percentile length %f ... ", max(total_sentence_length), truncate, filter_perc)
-        valid_idxs = [i for i in range(len(docs)) if total_sentence_length[i] <= filter_perc]
 
-        target = [data.y[i] for i in valid_idxs]
-        logging.info("Pos Percentage of remaining data ... ")
-        logging.info(np.array(sum(target))/len(target))
-        
-        return data.filter(valid_idxs)
+        data.X = [remove_n_words(data.X[i], x - filter_perc) for i, x in enumerate(total_sentence_length)]
+        logging.info("Truncated all ...")
+        return data
+
+def remove_n_words(X, n) :
+    d = [y for x in X for y in x]
+    d = d[n:]
+    new_X = []
+    for x in X[-1::-1] :
+        if len(d) != 0 :
+            l = len(x)
+            new_X = [d[-l:]] + new_X
+            d = d[:-l]
+
+    return new_X

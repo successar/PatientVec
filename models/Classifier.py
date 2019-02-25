@@ -88,6 +88,12 @@ class SequenceClassifier(nn.Module, from_params.FromParams) :
         target = torch.Tensor(batch.y).cuda() if batch.have('y') else None
         weight = batch.weight if batch.have('weight') else None
 
+        if self.predictor.replicate :
+            if self.structured['use_structured'] :
+                conditional = torch.Tensor(batch.structured_data).cuda()
+                hseq = torch.cat([hseq, conditional.unsqueeze(1).expand(-1, hseq.shape[1], -1)], dim=-1)
+            potential_seq = self.decoder(hseq)
+            predict, loss = self.predictor(potential, target, weight, masks=data.masks, potential_seq=potential_seq)
         predict, loss = self.predictor(potential, target, weight)
         batch.outputs = { "predict" : predict, "loss" : loss }
 

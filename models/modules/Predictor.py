@@ -5,16 +5,28 @@ import torch.nn.functional as F
 from allennlp.common import Registrable
 
 class Predictor(nn.Module, Registrable) :
+    def __init__(self, replicate=False, alpha=0.5) :
+        self.replicate = replicate
+        self.alpha = alpha
+        super().__init__()
+
     def forward(self, **kwargs) :
         pass
 
 @Predictor.register("binary")
 class Binary_Predictor(Predictor) :
-    def forward(self, potential, target, weight) :
+    def forward(self, potential, target, weight, masks=None, potential_seq=None) :
         predictions = torch.sigmoid(potential)
         if target is not None :
             pos_weight = weight[0][1]/weight[0][0] if weight is not None else None
             loss = F.binary_cross_entropy_with_logits(potential, target, pos_weight=pos_weight)
+            if self.replicate :
+                assert (masks is not None & potential_seq is not None)
+                predictions_seq = torch.sigmoid(potential_seq)
+                target_repl = target.unsqueeze(1).repeat(1, predictions_seq.shape[1], 1)
+                loss_seq = F.binary_cross_entropy_with_logits(potential_seq, target_repl, pos_weight=pos_weight, reduction='none').squeeze(-1)
+                loss_seq = (loss_seq * (1 - masks)).mean(1).mean()
+                loss = self.alpha * loss_seq + (1 - self.alpha) * loss
         else :
             loss = 0.0
             
