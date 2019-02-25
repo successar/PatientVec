@@ -24,7 +24,6 @@ class LR :
         self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm)
         
         gen_classifier = lambda : MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
-        # gen_classifier = lambda : MultiOutputClassifier(SGDClassifier(class_weight='balanced', penalty='l1', loss='log', alpha=0.5), n_jobs=8)
         self.bow_classifier = gen_classifier()
         self.tf_idf_classifier = gen_classifier()
         self.bow_with_structured_classifier = gen_classifier()

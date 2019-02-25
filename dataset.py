@@ -132,10 +132,6 @@ class Dataset() :
         
         filter_perc = np.percentile(total_sentence_length, truncate)
         logging.info("Maximum Sentence Length %f , %d percentile length %f ... ", max(total_sentence_length), truncate, filter_perc)
-        valid_idxs = [i for i in range(len(docs)) if total_sentence_length[i] <= filter_perc]
-
-        target = [data.y[i] for i in valid_idxs]
-        logging.info("Pos Percentage of remaining data ... ")
-        logging.info(np.array(sum(target))/len(target))
         
-        return data.filter(valid_idxs)
+        data.X = [[d[-int(filter_perc):]] for d in docs]
+        return data

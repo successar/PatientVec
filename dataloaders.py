@@ -37,8 +37,8 @@ def diagnosis_dataset(args) :
 
     return data
 
-def hip_dataset(args) :
-    data = Dataset(name='HipSurgery', dirname=os.path.join(args.data_dir, 'preprocess/HipSurgery/'))
+def hip_dataset(args, yr=3) :
+    data = Dataset(name='HipSurgery_' + str(yr), dirname=os.path.join(args.data_dir, 'preprocess/HipSurgery/', str(yr) + '_yrs'))
 
     labellist = ['Target']
     data.generate_labels(labellist, len(labellist), 'binary')
@@ -55,8 +55,8 @@ def hip_dataset(args) :
     
     return data
 
-def knee_dataset(args) :
-    data = Dataset(name='KneeSurgery', dirname=os.path.join(args.data_dir, 'preprocess/KneeSurgery/'))
+def knee_dataset(args, yr=3) :
+    data = Dataset(name='KneeSurgery_' + str(yr), dirname=os.path.join(args.data_dir, 'preprocess/KneeSurgery/', str(yr) + '_yrs'))
 
     labellist = ['Target']
     data.generate_labels(labellist, len(labellist), 'binary')
