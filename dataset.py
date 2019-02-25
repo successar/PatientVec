@@ -130,7 +130,7 @@ class Dataset() :
         docs = [[y for x in d for y in x] for d in data.X]
         total_sentence_length = [len(x) for x in docs]
         
-        filter_perc = np.percentile(total_sentence_length, truncate)
+        filter_perc = int(np.percentile(total_sentence_length, truncate))
         logging.info("Maximum Sentence Length %f , %d percentile length %f ... ", max(total_sentence_length), truncate, filter_perc)
         
         data.X = [[d[-int(filter_perc):]] for d in docs]

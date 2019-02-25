@@ -17,6 +17,8 @@ def readmission_dataset(args) :
         data.generate_encoded_field(f, 'trivial')
     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
     
+    data.keys_to_use = ['1/precision', '1/recall', '1/f1-score', 'accuracy', 'roc_auc', 'pr_auc']
+    
     return data
 
 def diagnosis_dataset(args) :
@@ -34,6 +36,8 @@ def diagnosis_dataset(args) :
     for f in features :
         data.generate_encoded_field(f, 'trivial')
     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    
+    data.keys_to_use = ['macro_roc_auc', 'macro_pr_auc']
 
     return data
 

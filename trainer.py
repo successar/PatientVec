@@ -22,7 +22,7 @@ class Trainer() :
             self.model.tensorboard_writer.add_metrics(self.model.epoch, {'test' : test_metrics})
 
             metric = test_metrics[save_on_metric]
-            if metric > best_metric and i > 0 :
+            if metric > best_metric:
                 best_metric = metric
                 save_model = True
                 print("Model Saved on ", save_on_metric, metric)
