@@ -6,6 +6,8 @@ preprocess/Readmission
 preprocess/Mortality
 preprocess/IMDB
 preprocess/WhatInNote
+preprocess/HipSurgery
+preprocess/KneeSurgery
 data
 mimic_github_repos
 Text-encoding-EHR
