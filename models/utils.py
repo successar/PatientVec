@@ -19,9 +19,13 @@ class Holder() :
             lengths.append(len(d))
             masks.append([1] + [0]*(len(d)-2) + [1]*(rem+1))
 
+        
         self.lengths = torch.LongTensor(np.array(lengths)).cuda()
         self.seq = torch.LongTensor(np.array(expanded, dtype='int64')).cuda()
-        self.masks = torch.ByteTensor(np.array(masks)).cuda()
+        try :
+            self.masks = torch.ByteTensor(np.array(masks)).cuda()
+        except :
+            breakpoint()
 
     def depad(self, seq) :
         depadded_seq = []
