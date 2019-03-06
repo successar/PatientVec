@@ -72,7 +72,10 @@ class SequenceClassifier(nn.Module, from_params.FromParams) :
         self.structured = structured
 
     def forward(self, batch) :
-        data = Holder(batch.X)
+        try :
+            data = Holder(batch.X)
+        except :
+            breakpoint()
         seq = data.seq
         lengths = data.lengths
         
@@ -94,7 +97,8 @@ class SequenceClassifier(nn.Module, from_params.FromParams) :
                 hseq = torch.cat([hseq, conditional.unsqueeze(1).expand(-1, hseq.shape[1], -1)], dim=-1)
             potential_seq = self.decoder(hseq)
             predict, loss = self.predictor(potential, target, weight, masks=data.masks, potential_seq=potential_seq)
-        predict, loss = self.predictor(potential, target, weight)
+        else :
+            predict, loss = self.predictor(potential, target, weight)
         batch.outputs = { "predict" : predict, "loss" : loss }
 
     @classmethod

@@ -135,3 +135,17 @@ class Dataset() :
         
         data.X = [[d[-int(filter_perc):]] for d in docs]
         return data
+
+def remove_n_words(X, n) :
+    d = [y for x in X for y in x]
+    d = d[n:]
+    new_X = []
+    for x in X[-1::-1] :
+        if len(d) != 0 :
+            l = len(x)
+            new_X = [d[-l:]] + new_X
+            d = d[:-l]
+
+    if new_X[0][0] != 2 :
+        new_X[0] = [2] + new_X[0]
+    return new_X
