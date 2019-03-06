@@ -132,8 +132,9 @@ class Dataset() :
         
         filter_perc = int(np.percentile(total_sentence_length, truncate))
         logging.info("Maximum Sentence Length %f , %d percentile length %f ... ", max(total_sentence_length), truncate, filter_perc)
-        
-        data.X = [[d[-int(filter_perc):]] for d in docs]
+
+        data.X = [remove_n_words(data.X[i], x - filter_perc) for i, x in enumerate(total_sentence_length)]
+        logging.info("Truncated all ...")
         return data
 
 def remove_n_words(X, n) :
