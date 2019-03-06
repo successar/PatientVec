@@ -147,4 +147,6 @@ def remove_n_words(X, n) :
             new_X = [d[-l:]] + new_X
             d = d[:-l]
 
+    if new_X[0][0] != 2 :
+        new_X[0] = [2] + new_X[0]
     return new_X
