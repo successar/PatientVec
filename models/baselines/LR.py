@@ -17,11 +17,12 @@ class LR :
         stop_words = config.get('stop_words', False)
         self.metrics = metrics_map[config['type']]
         self.norm = config.get('norm', None)
+        self.clip = config.get('clip', False)
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
 
-        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm)
+        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm, clip=self.clip)
         
         gen_classifier = lambda : MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
         self.bow_classifier = gen_classifier()
@@ -30,21 +31,22 @@ class LR :
         self.tf_idf_with_structured_classifier = gen_classifier()
 
         gen_dirname = lambda x : os.path.join('outputs/', self.exp_name, 'baselines', x, self.time_str)
-        self.bow_dirname = gen_dirname('LR+BOW+norm='+str(self.norm))
-        self.tf_dirname = gen_dirname('LR+TFIDF+norm='+str(self.norm))
-        self.bow_structured_dirname = gen_dirname('LR+BOW+norm=' + str(self.norm) + '+Structured')
-        self.tf_structured_dirname = gen_dirname('LR+TFIDF+norm=' + str(self.norm) + '+Structured')
+        self.bow_dirname = gen_dirname('LR+BOW+norm='+str(self.norm)+'+clip='+str(self.clip))
+        self.tf_dirname = gen_dirname('LR+TFIDF+norm='+str(self.norm)+'+clip='+str(self.clip))
+        self.bow_structured_dirname = gen_dirname('LR+BOW+norm=' + str(self.norm) + '+clip=' + str(self.clip) + '+Structured')
+        self.tf_structured_dirname = gen_dirname('LR+TFIDF+norm=' + str(self.norm) + '+clip=' + str(self.clip) + '+Structured')
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]
-        self.bowder.fit_tfidf(docs)
+#         self.bowder.fit_tfidf(docs)
         train_bow = self.bowder.get_bow(docs)
-        train_tf = self.bowder.get_tfidf(docs)
+#         breakpoint()
+#         train_tf = self.bowder.get_tfidf(docs)
 
         self.bow_classifier.fit(train_bow, train_data.y)
         print("Fit BOW Classifier ...")
-        self.tf_idf_classifier.fit(train_tf, train_data.y)
-        print("Fit TFIDF Classifier ...")
+#         self.tf_idf_classifier.fit(train_tf, train_data.y)
+#         print("Fit TFIDF Classifier ...")
 
         # train_bow = np.concatenate([train_bow.todense(), train_data.structured_data], axis=-1)
         # train_tf = np.concatenate([train_tf.todense(), train_data.structured_data], axis=-1)
@@ -68,10 +70,10 @@ class LR :
     def evaluate(self, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
         bow = self.bowder.get_bow(docs)
-        tf = self.bowder.get_tfidf(docs)
+#         tf = self.bowder.get_tfidf(docs)
 
         self.evaluate_classifier('BOW', self.bow_classifier, bow, data.y, self.bow_dirname, save_results)
-        self.evaluate_classifier('TFIDF', self.tf_idf_classifier, tf, data.y, self.tf_dirname, save_results)
+#         self.evaluate_classifier('TFIDF', self.tf_idf_classifier, tf, data.y, self.tf_dirname, save_results)
         
         # bow = np.concatenate([bow.todense(), data.structured_data], axis=-1)
         # tf = np.concatenate([tf.todense(), data.structured_data], axis=-1)

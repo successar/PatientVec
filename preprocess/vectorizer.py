@@ -48,10 +48,12 @@ class Vectorizer :
     def load_sequences(self, filename) :
         return pickle.load(open(filename, 'rb'))
 
+from scipy.sparse.linalg import norm
 class BoWder :
-    def __init__(self, vocab=None, stop_words=False, norm=None) :
+    def __init__(self, vocab=None, stop_words=False, norm=None, clip=False) :
         self.vocab = vocab 
         self.norm = norm
+        self.clip = clip
 
         self.words_to_remove = set([self.vocab.PAD, self.vocab.SOS, self.vocab.UNK, self.vocab.EOS])
         if stop_words :
@@ -85,8 +87,18 @@ class BoWder :
     
     def get_bow(self, X) :
         bow = self.generate_bow(X)
+        if self.clip :
+            print("Clipping ...")
+            bow = np.clip(bow.todense(), 0, 1)
+            assert (bow > 1).sum() == 0, (bow > 1).sum()
         if self.norm is not None :
-            bow = normalize(bow, norm=self.norm, copy=False)
+            print("Normalising using " + str(self.norm))
+            if self.norm.startswith('l') and self.norm not in ['l1', 'l2'] :
+                print('Using Norm from linalg')
+                norm_l = norm(bow, int(self.norm[1]), axis=1)
+                bow = bow / norm_l[:, None]
+            else :
+                bow = normalize(bow, norm=self.norm, copy=False)
             
         return bow
 

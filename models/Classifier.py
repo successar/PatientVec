@@ -72,10 +72,7 @@ class SequenceClassifier(nn.Module, from_params.FromParams) :
         self.structured = structured
 
     def forward(self, batch) :
-        try :
-            data = Holder(batch.X)
-        except :
-            breakpoint()
+        data = Holder(batch.X)
         seq = data.seq
         lengths = data.lengths
         

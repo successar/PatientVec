@@ -54,6 +54,12 @@ def modify_training_params(config, optimiser, lr, weight_decay) :
 
     return config
 
+def replicate_config(config, alpha) :
+    config['model']['predictor']['replicate'] = True
+    config['model']['predictor']['alpha'] = alpha
+    config['exp_config']['exp_name'] += '+replicate(alpha=+'+str(alpha)+')'
+    return config
+
 ############### Seq Classifier Experiment ###################################
 
 def seq_classifier_experiment(data, encoder_params) :

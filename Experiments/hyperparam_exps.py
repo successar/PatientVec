@@ -13,7 +13,8 @@ def vanilla_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90)
 
     for e in vanilla_configs :
-        config = e(data, structured=True, args=args)
+        structured = vars(args).get('structured', True)
+        config = e(data, structured=structured, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -31,7 +32,8 @@ def attention_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90)
 
     for e in attention_configs :
-        config = e(data, structured=True, args=args)
+        structured = vars(args).get('structured', True)
+        config = e(data, structured=structured, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -49,7 +51,8 @@ def hierarchical_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90)
 
     for e in hierarchical_configs :
-        config = e(data, structured=True, args=args)
+        structured = vars(args).get('structured', True)
+        config = e(data, structured=structured, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -67,7 +70,8 @@ def structured_attention_experiments(data, args) :
     train_data, dev_data = get_basic_data(data, truncate=90, encodings=data.structured_columns)
 
     for e in structured_configs :
-        config = e(data, structured=True, encodings=data.structured_columns, args=args)
+        structured = vars(args).get('structured', True)
+        config = e(data, structured=structured, encodings=data.structured_columns, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -80,10 +84,21 @@ def structured_attention_experiments(data, args) :
         evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
         _ = evaluator.evaluate(dev_data, save_results=True)
         print('='*300)
+        
+from PatientVec.models.baselines.LR import LR
+
+def lr_experiments(data, args) :
+    train_data, dev_data = get_basic_data(data, truncate=90, encodings=data.structured_columns)
+    config = {'vocab' : data.vocab, 'stop_words' : True, 'exp_name' : data.name, 'type' : data.metrics_type}
+    config.update(vars(args).get('lr', {}))
+    lr = LR(config)
+    lr.train(train_data)
+    lr.evaluate(dev_data, save_results=True)
 
 experiment_types = {
     'vanilla' : vanilla_experiments,
     'attention' : attention_experiments,
     'hierarchical' : hierarchical_experiments,
-    'structured' : structured_attention_experiments
+    'structured' : structured_attention_experiments,
+    'lr' : lr_experiments
 }
