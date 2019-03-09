@@ -70,7 +70,7 @@ class ClassificationTrainer(Trainer) :
 
         for batch in tqdm_notebook(generator) :
             torch.cuda.empty_cache()
-
+            del batch.y
             self.model(batch)
             predict = batch.outputs['predict']
 
