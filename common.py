@@ -13,7 +13,7 @@ import torch
 from IPython.core.display import HTML, display
 from tqdm import tqdm_notebook
 
-from PatientVec.Experiments.config_exp import basic_configs, hierarchical_configs, structured_configs
+from PatientVec.Experiments.modifiable_config_exp import vanilla_configs, attention_configs, hierarchical_configs, structured_configs
 
 import logging
 logging.basicConfig(format='%(levelname)s - %(asctime)s - %(message)s', level=logging.INFO)

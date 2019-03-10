@@ -50,6 +50,8 @@ class Evaluator() :
         test_metrics = self.metrics(test_data.y, outputs['predictions'])
         if self.display_metrics :
             print_metrics(test_metrics)
+            
+        test_data.outputs = outputs
 
         if save_results :
             f = open(self.model.dirname + '/evaluate.json', 'w')
@@ -57,3 +59,5 @@ class Evaluator() :
             f.close()
 
         return outputs
+
+    
