@@ -6,6 +6,14 @@ def add_embedder(vocab_size, embed_size, embedding_file) :
         "embedding_file" : embedding_file
     }
 
+def add_elmo_embedder(vocab_size, embed_size, elmo_options) :
+    return {
+        'type' : 'elmo_embedder',
+        'vocab_size' : vocab_size,
+        'embed_size' : embed_size,
+        'elmo_options' : elmo_options
+    }
+
 ##################### Encoder Units #######################################################
 
 def lstm_encoder_params(hidden_size=128, args=None) :
