@@ -87,3 +87,18 @@ def add_structured_attention(encodings, nconditional, sim_type='additive', hidde
             }
         }
     }
+
+def add_decoder(hidden_dims, activations, args=None) :
+    if args is not None and 'decoder' in vars(args) :
+        hidden_dims = vars(args)['decoder'].get('hidden_dims', hidden_dims)
+        activations = vars(args)['decoder'].get('activations', activations)
+        
+    return {
+        'exp_name' : 'Decoder(' + (','.join([str(x)+'.'+str(y) for x, y in zip(hidden_dims, activations)])) + ')',
+        'params' : {
+            'num_layers' : len(hidden_dims) + 1,
+            'hidden_dims' : hidden_dims,
+            'activations' : activations + ['linear'],
+            'dropout' : 0.2
+        }
+    }

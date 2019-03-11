@@ -14,7 +14,7 @@ class Batch() :
         return hasattr(self, attr)
 
 class Vector_Generator() :
-    def __init__(self, train_data, batch_size, sort_and_shuffle=True) :
+    def __init__(self, train_data, batch_size, sort_and_shuffle=True, balanced=False) :
         docs = train_data.X
 
         self.valid_idxs = list(range(len(docs)))

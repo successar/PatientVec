@@ -55,9 +55,9 @@ class Dataset() :
     def get_vec_encoding(self, data, _type='bow') :
         docs = [[y for x in d for y in x] for d in data.X]
         if _type == 'bow' :
-            return self.bowder.get_bow(docs)
+            return self.bowder.get_bow(docs).toarray()
         elif _type == 'tfidf' :
-            return self.bowder.get_tfidf(docs)
+            return self.bowder.get_tfidf(docs).toarray()
         else :
             raise LookupError("No such encoding")
 

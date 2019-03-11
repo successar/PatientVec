@@ -100,18 +100,16 @@ def hierarchical_experiment(data, word_encoder_params, sentence_encoder_params, 
     config['model']['sentence_attention'] = sentence_attention_params['params']
     return config
 
-def vector_experiment(data) :
-    config = get_basic_model_config(data, data.name + '/Test_TFIDF')
+def vector_experiment(data, decoder_params) :
+    config = get_basic_model_config(data, data.name + '/baselines/')
     config['model']['type'] = 'vec_classifier'
     del config['model']['embedder']
-    config['model']['decoder']['input_dim'] = len(data.bowder.words_to_keep)
-    config['model']['decoder']['num_layers'] = 1
-    config['model']['decoder']['hidden_dims'] = [data.output_size]
-    config['model']['decoder']['activations'] = ['linear']
-    config['training_config']['common']['bsize'] = 256
-    config['model']['reg'] = { "type" : "l1", "weight" : 0.5}
-    config = make_structured(config, data.structured_dim)
-    config = modify_training_params(config, 'Adam', 0.001, 0.0)
+    decoder_params['params']['hidden_dims'] += [data.output_size]
+    decoder_params['params']['input_dim'] = len(data.bowder.words_to_keep)
+    config['model']['decoder'] = decoder_params['params']
+    config['exp_config']['exp_name'] += '+'.join([decoder_params['exp_name']])
+    config['model']['reg'] = { "type" : "l2", "weight" : 0.5}
+    config['training_config']['groups'][0][1]['lr'] = 0.01
     return config
 
 

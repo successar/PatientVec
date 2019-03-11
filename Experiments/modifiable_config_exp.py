@@ -89,3 +89,25 @@ def Average_with_conditional_attention(data, structured, encodings, args) :
     return config
 
 structured_configs = [Average_with_conditional_attention, LSTM_with_conditional_attention, CNN_with_conditional_attention]
+
+def LR(data, structured, args) :
+    decoder_params = add_decoder([], [], args)
+    config = vector_experiment(data, decoder_params)
+    config['model']['reg'] = { "type" : "l1", "weight" : 1e-5 }
+    for g in config['training_config']['groups'] :
+        g[1]['weight_decay'] = 0.0
+        
+    config['training_config']['common']['bsize'] = 128
+    if structured :
+        config = make_structured(config, data.structured_dim)
+    return config
+
+def MLP(data, structured, args) :
+    decoder_params = add_decoder([256], ['tanh'], args)
+    config = vector_experiment(data, decoder_params)
+    config['training_config']['common']['bsize'] = 128
+    if structured :
+        config = make_structured(config, data.structured_dim)
+    return config
+
+vector_configs = [LR, MLP]
