@@ -6,7 +6,7 @@ from PatientVec.Experiments.modifiable_config_exp import *
 
 def get_basic_data(data, truncate=90, structured=True, encodings=None) :
     train_data = data.filter_data_length(data.get_data('train', structured=structured, encodings=encodings), truncate=truncate)
-    dev_data = data.filter_data_length(data.get_data('test', structured=structured, encodings=encodings), truncate=truncate)
+    dev_data = data.filter_data_length(data.get_data('dev', structured=structured, encodings=encodings), truncate=truncate)
 
     return train_data, dev_data
     
