@@ -18,13 +18,14 @@ class LR :
         self.metrics = metrics_map[config['type']]
         self.norm = config.get('norm', None)
         self.clip = config.get('clip', False)
+        self.constant_mul = config.get('constant_mul', 1.0)
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
 
-        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm, clip=self.clip)
+        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm, clip=self.clip, constant_mul=self.constant_mul)
         
-        gen_classifier = lambda : MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
+        gen_classifier = lambda : MultiOutputClassifier(LogisticRegression(class_weight='balanced', C=1e+10), n_jobs=8)
         self.bow_classifier = gen_classifier()
         self.tf_idf_classifier = gen_classifier()
         self.bow_with_structured_classifier = gen_classifier()
@@ -66,13 +67,15 @@ class LR :
             f = open(dirname + '/evaluate.json', 'w')
             json.dump(metrics, f)
             f.close()
+            
+        return metrics
 
     def evaluate(self, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
         bow = self.bowder.get_bow(docs)
 #         tf = self.bowder.get_tfidf(docs)
 
-        self.evaluate_classifier('BOW', self.bow_classifier, bow, data.y, self.bow_dirname, save_results)
+        metrics = self.evaluate_classifier('BOW', self.bow_classifier, bow, data.y, self.bow_dirname, save_results)
 #         self.evaluate_classifier('TFIDF', self.tf_idf_classifier, tf, data.y, self.tf_dirname, save_results)
         
         # bow = np.concatenate([bow.todense(), data.structured_data], axis=-1)
@@ -80,6 +83,8 @@ class LR :
         
         # self.evaluate_classifier('BOW+Structured', self.bow_with_structured_classifier, bow, data.y, self.bow_structured_dirname, save_results)
         # self.evaluate_classifier('TFIDF+Structured', self.tf_idf_with_structured_classifier, tf, data.y, self.tf_structured_dirname, save_results)
+        
+        return metrics
 
     def get_features(self, classifier, estimator=0, n=100) :
         return [self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in 
