@@ -16,14 +16,15 @@ def add_elmo_embedder(vocab_size, embed_size, elmo_options) :
 
 ##################### Encoder Units #######################################################
 
-def lstm_encoder_params(hidden_size=128, args=None) :
+def rnn_encoder_params(rnntype='lstm', hidden_size=128, args=None) :
     if args is not None and 'encoder' in vars(args) :
+        rnntype = vars(args)['encoder'].get('rnntype', rnntype)
         hidden_size = vars(args)['encoder'].get('hidden_size', hidden_size)
 
     return {
-        'exp_name' : 'LSTM' + '(hs=' + str(hidden_size) + ')',
+        'exp_name' : rnntype.upper() + '(hs=' + str(hidden_size) + ')',
         'params' : {
-            "type" : 'lstm',
+            "type" : rnntype,
             "hidden_size" : hidden_size
         }
     }

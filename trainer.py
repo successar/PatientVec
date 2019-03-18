@@ -9,7 +9,7 @@ class Trainer() :
         self.metrics = metrics_map[_type]
         self.display_metrics = display_metrics
     
-    def train(self, train_data, test_data, n_iters=20, save_on_metric='roc_auc') :
+    def train(self, train_data, test_data, n_iters=15, save_on_metric='roc_auc') :
         best_metric = 0.0
         for i in tqdm_notebook(range(n_iters)) :
             self.model.train(train_data)

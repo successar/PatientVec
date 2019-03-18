@@ -11,10 +11,10 @@ def get_basic_data(data, truncate=90, structured=True, encodings=None) :
     return train_data, dev_data
     
 def vanilla_experiments(data, args) :
-    train_data, dev_data = get_basic_data(data, truncate=90)
+    structured = vars(args).get('structured', True)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
 
     for e in vanilla_configs :
-        structured = vars(args).get('structured', True)
         config = e(data, structured=structured, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
@@ -30,10 +30,10 @@ def vanilla_experiments(data, args) :
         print('='*300)
 
 def attention_experiments(data, args) :
-    train_data, dev_data = get_basic_data(data, truncate=90)
+    structured = vars(args).get('structured', True)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
 
     for e in attention_configs :
-        structured = vars(args).get('structured', True)
         config = e(data, structured=structured, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
@@ -49,10 +49,10 @@ def attention_experiments(data, args) :
         print('='*300)
             
 def hierarchical_experiments(data, args) :
-    train_data, dev_data = get_basic_data(data, truncate=90)
+    structured = vars(args).get('structured', True)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
 
     for e in hierarchical_configs :
-        structured = vars(args).get('structured', True)
         config = e(data, structured=structured, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
@@ -68,10 +68,10 @@ def hierarchical_experiments(data, args) :
         print('='*300)
 
 def structured_attention_experiments(data, args) :
-    train_data, dev_data = get_basic_data(data, truncate=90, encodings=data.structured_columns)
+    structured = vars(args).get('structured', True)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90, encodings=data.structured_columns)
 
     for e in structured_configs :
-        structured = vars(args).get('structured', True)
         config = e(data, structured=structured, encodings=data.structured_columns, args=args)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
