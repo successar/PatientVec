@@ -85,6 +85,12 @@ class LR :
         # self.evaluate_classifier('TFIDF+Structured', self.tf_idf_with_structured_classifier, tf, data.y, self.tf_structured_dirname, save_results)
         
         return metrics
+    
+    def predict(self, data) :
+        docs = [[y for x in d for y in x] for d in data.X]
+        bow = self.bowder.get_bow(docs)
+        pred = normalise_output(np.array(self.bow_classifier.predict_proba(bow)))
+        return pred
 
     def get_features(self, classifier, estimator=0, n=100) :
         return [self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in 
