@@ -21,6 +21,13 @@ def CNN(data, structured, args) :
         config = make_structured(config, data.structured_dim)
     return config
 
+def SRU(data, structured, args) :
+    encoder_params = rnn_encoder_params(rnntype='sru', hidden_size=128, args=args)
+    config = seq_classifier_experiment(data, encoder_params)
+    if structured :
+        config = make_structured(config, data.structured_dim)
+    return config 
+
 def LSTM_with_attention(data, structured, args) :
     encoder_params = rnn_encoder_params(rnntype='lstm', hidden_size=128, args=args)
     attention_params = add_attention(sim_type='additive', hidden_size=128, args=args)
@@ -53,7 +60,7 @@ def SRU_with_attention(data, structured, args) :
         config = make_structured(config, data.structured_dim)
     return config
 
-vanilla_configs = [Average, LSTM, CNN]
+vanilla_configs = [Average, LSTM, CNN, SRU]
 attention_configs = [Average_with_attention, LSTM_with_attention, CNN_with_attention, SRU_with_attention]
 
 def Hierarchical_LSTM_with_attention(data, structured, args) :
