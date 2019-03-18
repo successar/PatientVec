@@ -60,7 +60,7 @@ def SRU_with_attention(data, structured, args) :
         config = make_structured(config, data.structured_dim)
     return config
 
-vanilla_configs = [Average, LSTM, CNN, SRU]
+vanilla_configs = [Average, LSTM, CNN]
 attention_configs = [Average_with_attention, LSTM_with_attention, CNN_with_attention, SRU_with_attention]
 
 def Hierarchical_LSTM_with_attention(data, structured, args) :
