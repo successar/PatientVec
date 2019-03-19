@@ -21,6 +21,26 @@ def readmission_dataset(args) :
     
     return data
 
+def mortality_dataset(args, _type) :
+    data = Dataset(name='Mortality_'+_type, dirname=os.path.join(args.data_dir, 'preprocess/Mortality/'))
+
+    labellist = ['mortality_' + _type]
+    data.generate_labels(labellist, len(labellist), 'binary')
+    data.save_on_metric = 'roc_auc'
+    data.metrics_type = 'classifier'
+
+    data.generate_encoded_field('gender_y', 'onehot')
+    data.generate_encoded_field('age_y', 'onehot')
+    data.generate_encoded_field('ethnicity_y', 'onehot')
+    features = [x for x in data.dataframe.columns if x.startswith('feature')]
+    for f in features :
+        data.generate_encoded_field(f, 'trivial')
+    data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    
+    data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']
+    
+    return data
+
 def diagnosis_dataset(args) :
     data = Dataset(name='Diagnosis', dirname=os.path.join(args.data_dir, 'preprocess/Diagnosis/'))
 
@@ -76,3 +96,12 @@ def knee_dataset(args, yr=3) :
 #     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
     
     return data
+
+dataloaders = {
+    'readmission' : readmission_dataset,
+    'mortality_30day' : lambda x : mortality_dataset(x, '30day'),
+    'mortality_1yr' : lambda x : mortality_dataset(x, '1yr'),
+    'diagnosis' : diagnosis_dataset,
+    'hip' : hip_dataset,
+    'knee' : knee_dataset
+}

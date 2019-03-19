@@ -8,7 +8,7 @@ parser.add_argument('--display', dest='display', action='store_true')
 parser.add_argument("--output_dir", type=str)
 parser.add_argument("--mock", dest='mock', action='store_true')
 
-args = parser.parse_args()
+args, extras = parser.parse_known_args()
 
 data = diagnosis_dataset(args)
 basic_experiments(data, args)

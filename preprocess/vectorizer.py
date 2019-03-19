@@ -50,10 +50,11 @@ class Vectorizer :
 
 from scipy.sparse.linalg import norm
 class BoWder :
-    def __init__(self, vocab=None, stop_words=False, norm=None, clip=False) :
+    def __init__(self, vocab=None, stop_words=False, norm=None, clip=False, constant_mul=1.0) :
         self.vocab = vocab 
         self.norm = norm
         self.clip = clip
+        self.constant_mul = constant_mul
 
         self.words_to_remove = set([self.vocab.PAD, self.vocab.SOS, self.vocab.UNK, self.vocab.EOS])
         if stop_words :
@@ -93,10 +94,15 @@ class BoWder :
             assert (bow > 1).sum() == 0, (bow > 1).sum()
         if self.norm is not None :
             print("Normalising using " + str(self.norm))
-            if self.norm.startswith('l') and self.norm not in ['l1', 'l2'] :
+            if self.norm.startswith('l') :
                 print('Using Norm from linalg')
                 norm_l = norm(bow, int(self.norm[1]), axis=1)
+                norm_l = np.where(norm_l == 0, 1.0, norm_l)
+#                 print("Epsiloning ...")
+#                 norm_l = norm_l * (1 + np.random.randn(len(norm_l)) * 0.1)
                 bow = bow / norm_l[:, None]
+                print("Multiplying by constant , ", self.constant_mul)
+                bow = bow * self.constant_mul
             else :
                 bow = normalize(bow, norm=self.norm, copy=False)
             

@@ -73,3 +73,17 @@ class AverageEncoder(Encoder) :
         h = output.mean(1)
 
         return h, output
+
+from sru import SRU
+@Encoder.register("sru")
+class SRUEncoder(Encoder) :
+    def __init__(self, input_size, hidden_size) :
+        super(SRUEncoder, self).__init__()
+        self.output_size = hidden_size * 2
+        self.rnn = SRU(input_size, hidden_size, num_layers=2, bidirectional=True, rescale=True)
+
+    def forward(self, seqs, lengths) :
+        seqs = seqs.transpose(0, 1) #(L, B, E)
+        output, h = self.rnn(seqs) #(L, B, H*2), #(Layers, B, H*2)
+        h = h[1] #(B, H*2)            
+        return h, output.transpose(0, 1)
