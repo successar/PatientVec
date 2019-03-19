@@ -99,6 +99,6 @@ def add_decoder(hidden_dims, activations, args=None) :
             'num_layers' : len(hidden_dims) + 1,
             'hidden_dims' : hidden_dims,
             'activations' : activations + ['linear'],
-            'dropout' : 0.2
+            'dropout' : [0.2]*len(hidden_dims) + [0.0]
         }
     }

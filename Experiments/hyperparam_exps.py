@@ -88,7 +88,7 @@ def structured_attention_experiments(data, args) :
         
 def vector_experiments(data, args) :
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=100)
     data.generate_bowder(train_data, stop_words=True, norm=args.norm)
     train_data.X = data.get_vec_encoding(train_data, _type=args.bow_type)
     dev_data.X = data.get_vec_encoding(dev_data, _type=args.bow_type)
