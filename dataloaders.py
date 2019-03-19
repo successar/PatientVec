@@ -34,7 +34,10 @@ def mortality_dataset(args, _type) :
     data.generate_encoded_field('ethnicity_y', 'onehot')
     features = [x for x in data.dataframe.columns if x.startswith('feature')]
     for f in features :
-        data.generate_encoded_field(f, 'trivial')
+        if 'sapsii' not in f :
+            data.generate_encoded_field(f, 'trivial')
+        else :
+            data.generate_encoded_field(f, 'scale', {'m' : 0, 'M' : 163})
     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
     
     data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']

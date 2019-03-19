@@ -19,7 +19,23 @@ class NoEncoding() :
     
     def get_output_dim(self) :
         return self.output_dim
-
+    
+class ScaleEncoder():
+    def __init__(self, m, M) :
+        self.m = m
+        self.M = M
+        
+    def fit(self, X) :
+        self.output_dim = 1
+        
+    def transform(self, X) :
+        X = np.array(X).reshape(-1, 1)
+        return (X - self.m)/(self.M - self.m)
+    
+    def get_output_dim(self) :
+        return self.output_dim
+    
+    
 class OneHotEncoding() :
     def __init__(self) :
         self.encoder = LabelBinarizer()
@@ -79,5 +95,6 @@ field_processors = {
     'trivial' : lambda x : NoEncoding(),
     'onehot' : lambda x : OneHotEncoding(),
     'binned' : lambda x : BinnedEncoding(**x),
-    'icd9' : lambda x  :ICDEncoding(**x)
+    'icd9' : lambda x  :ICDEncoding(**x),
+    'scale' : lambda x : ScaleEncoder(**x)
 }
