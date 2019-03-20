@@ -48,12 +48,14 @@ class Vectorizer :
     def load_sequences(self, filename) :
         return pickle.load(open(filename, 'rb'))
 
-from scipy.sparse.linalg import norm
+from scipy.sparse.linalg import norm as sparse_norm
+from numpy.linalg import norm as dense_norm
+from scipy.sparse import issparse
+
 class BoWder :
-    def __init__(self, vocab=None, stop_words=False, norm=None, clip=False, constant_mul=1.0) :
+    def __init__(self, vocab=None, stop_words=False, norm=None, constant_mul=1.0) :
         self.vocab = vocab 
         self.norm = norm
-        self.clip = clip
         self.constant_mul = constant_mul
 
         self.words_to_remove = set([self.vocab.PAD, self.vocab.SOS, self.vocab.UNK, self.vocab.EOS])
@@ -65,6 +67,8 @@ class BoWder :
 
         self.map_vocab_to_bow = {self.vocab.word2idx[k]:i for i, k in enumerate(self.words_to_keep)}
         self.map_bow_to_vocab = {v:k for k, v in self.map_vocab_to_bow.items()}
+
+        self.tfidftransform = TfidfTransformer(norm=None)
 
     def generate_bow(self, X) :
         bow = np.zeros((len(X), len(self.words_to_keep)))
@@ -79,35 +83,45 @@ class BoWder :
 
     def fit_tfidf(self, X) :
         bow = self.generate_bow(X)
-        self.tfidftransform = TfidfTransformer(norm=self.norm)
         self.tfidftransform.fit(bow)
 
     def get_tfidf(self, X) :
         bow = self.generate_bow(X)
-        return self.tfidftransform.transform(bow)
+        print("TFIDFing ...")
+        bow = self.tfidftransform.transform(bow)
+        bow = self.normalise_bow(bow)
+        return bow
     
     def get_bow(self, X) :
         bow = self.generate_bow(X)
-        if self.clip :
-            print("Clipping ...")
-            bow = np.clip(bow.todense(), 0, 1)
-            assert (bow > 1).sum() == 0, (bow > 1).sum()
+        bow = self.normalise_bow(bow)        
+        return bow
+
+    def get_binary_bow(self, X) :
+        bow = self.generate_bow(X)
+        print("Clipping ...")
+        bow = np.clip(bow.todense(), 0, 1)
+        assert (bow > 1).sum() == 0, (bow > 1).sum()
+        bow = self.normalise_bow(bow)
+        return bow
+
+    def normalise_bow(self, bow) :
         if self.norm is not None :
             print("Normalising using " + str(self.norm))
             if self.norm.startswith('l') :
                 print('Using Norm from linalg')
-                norm_l = norm(bow, int(self.norm[1]), axis=1)
+                if issparse(bow) :
+                    norm_l = sparse_norm(bow, int(self.norm[1]), axis=1)
+                else :
+                    norm_l = dense_norm(bow, int(self.norm[1]), axis=1)
                 norm_l = np.where(norm_l == 0, 1.0, norm_l)
-#                 print("Epsiloning ...")
-#                 norm_l = norm_l * (1 + np.random.randn(len(norm_l)) * 0.1)
                 bow = bow / norm_l[:, None]
                 print("Multiplying by constant , ", self.constant_mul)
                 bow = bow * self.constant_mul
             else :
                 bow = normalize(bow, norm=self.norm, copy=False)
-            
-        return bow
 
+        return bow
 
 class DataHolder() :
     def __init__(self, **kwargs) :
