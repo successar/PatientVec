@@ -5,7 +5,7 @@
 #SBATCH --nodes=1                                 
 #SBATCH --tasks-per-node=1                        
 #SBATCH --cpus-per-task=16                         
-#SBATCH --mem=40Gb                               
+#SBATCH --mem=90Gb                               
 #SBATCH --output=run_model_lda_result.%j.out               
 #SBATCH --error=run_model_lda_result.%j.err
 #SBATCH --mail-type=ALL    

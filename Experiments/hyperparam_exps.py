@@ -50,10 +50,10 @@ def attention_experiments(data, args) :
         
 def sru_experiments(data, args) :
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90, encodings=data.structured_columns)
 
     for e in sru_configs :
-        config = e(data, structured=structured, args=args)
+        config = e(data, structured=structured, args=args, encodings=data.structured_columns)
         if args.output_dir is not None :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
@@ -61,7 +61,7 @@ def sru_experiments(data, args) :
         print(config)
 
         trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, n_iters=10, save_on_metric=data.save_on_metric)
+        trainer.train(train_data, dev_data, n_iters=6, save_on_metric=data.save_on_metric)
 
         evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
         _ = evaluator.evaluate(dev_data, save_results=True)
