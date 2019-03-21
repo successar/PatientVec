@@ -3,7 +3,7 @@ from sklearn.linear_model import LogisticRegression
 
 from sklearn.multioutput import MultiOutputClassifier
 from PatientVec.metrics import *
-import time, json
+import time, json, pickle
 import os
 
 def normalise_output(y) :
@@ -40,20 +40,26 @@ class LR :
         self.norm = config.get('norm', None)
         self.constant_mul = config.get('constant_mul', 1.0)
         self.has_structured = config.get('structured', True)
+        self.basepath = config.get('basepath', 'outputs')
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
-
+        
+        self.gen_dirname = lambda x : os.path.join(self.basepath, self.exp_name, 'baselines', x, self.time_str)
+        if config.get('lda', False) :
+            print("Setting up LDA ...")
+            self.init_lda(config)
+            return
+        
+        print("Not running LDA, Yay !")
         self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm, constant_mul=self.constant_mul)
-
-        gen_dirname = lambda x : os.path.join('outputs/', self.exp_name, 'baselines', x, self.time_str)
-        bow_dirname = gen_dirname('LR+BOW+norm='+str(self.norm))
-        tf_dirname = gen_dirname('LR+TFIDF+norm='+str(self.norm))
-        binbow_dirname = gen_dirname('LR+BinaryBOW+norm='+str(self.norm))
-        bow_structured_dirname = gen_dirname('LR+BOW+norm=' + str(self.norm) + '+Structured')
-        binbow_structured_dirname = gen_dirname('LR+BinaryBOW+norm=' + str(self.norm) + '+Structured')
-        tf_structured_dirname = gen_dirname('LR+TFIDF+norm=' + str(self.norm) + '+Structured')
-        structured_dirname = gen_dirname('LR+Structured')
+        bow_dirname = self.gen_dirname('LR+BOW+norm='+str(self.norm))
+        tf_dirname = self.gen_dirname('LR+TFIDF+norm='+str(self.norm))
+        binbow_dirname = self.gen_dirname('LR+BinaryBOW+norm='+str(self.norm))
+        bow_structured_dirname = self.gen_dirname('LR+BOW+norm=' + str(self.norm) + '+Structured')
+        binbow_structured_dirname = self.gen_dirname('LR+BinaryBOW+norm=' + str(self.norm) + '+Structured')
+        tf_structured_dirname = self.gen_dirname('LR+TFIDF+norm=' + str(self.norm) + '+Structured')
+        structured_dirname = self.gen_dirname('LR+Structured')
         
         self.bow_classifier = Classifier(self, 'BOW', bow_dirname)
         self.tf_idf_classifier = Classifier(self, 'TFIDF', tf_dirname)
@@ -62,6 +68,65 @@ class LR :
         self.binbow_with_structured_classifier = Classifier(self, 'BinBOW+Structured', binbow_structured_dirname)
         self.tf_idf_with_structured_classifier = Classifier(self, 'TFIDF+Structured', tf_structured_dirname)
         self.structured_classifier = Classifier(self, 'Structured', structured_dirname)
+
+    def init_lda(self, config) :
+        vocab = config['vocab']
+        stop_words = config.get('stop_words', False)
+        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=None, constant_mul=self.constant_mul)
+        lda_dirname = self.gen_dirname('LR+LDA+norm=None')
+        lda_l2_dirname = self.gen_dirname('LR+LDA+norm=l2')
+        lda_structured_dirname = self.gen_dirname('LR+LDA+norm=None+Structured')
+        lda_l2_structured_dirname = self.gen_dirname('LR+LDA+norm=l2+Structured')
+
+        self.lda_classifier = Classifier(self, 'LDA', lda_dirname)
+        self.lda_l2_classifier = Classifier(self, 'LDA+l2', lda_l2_dirname)
+        self.lda_structured_classifier = Classifier(self, 'LDA+Structured', lda_structured_dirname)
+        self.lda_l2_structured_classifier = Classifier(self, 'LDA+l2+Structured', lda_l2_structured_dirname)
+
+        self.lda_file = os.path.join(lda_dirname, 'lda_object.p')
+
+    def train_lda(self, train_data) :
+        docs = [[y for x in d for y in x] for d in train_data.X]
+        
+        train_bow = self.bowder.get_bow(docs)
+        self.lda = LatentDirichletAllocation(n_components=50, learning_method='online', verbose=1, n_jobs=4)
+        self.lda.fit(train_bow)
+
+        train_lda = self.lda.transform(train_bow)
+
+        self.lda_classifier.classifier.fit(train_lda, train_data.y)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), train_data.structured_data], axis=-1)
+            self.lda_structured_classifier.classifier.fit(train_lda, train_data.y)
+
+        train_lda = self.lda.transform(train_bow)
+        train_lda = self.bowder.normalise_bow(train_lda, use_norm='l2')
+
+        self.lda_l2_classifier.classifier.fit(train_lda, train_data.y)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), train_data.structured_data], axis=-1)
+            self.lda_l2_structured_classifier.classifier.fit(train_lda, train_data.y)
+
+    def evaluate_lda(self, data, save_results=False) :
+        docs = [[y for x in d for y in x] for d in data.X]
+
+        train_bow = self.bowder.get_bow(docs)
+        train_lda = self.lda.transform(train_bow)
+
+        self.lda_classifier.evaluate(train_lda, data.y, save_results)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), data.structured_data], axis=-1)
+            self.lda_structured_classifier.evaluate(train_lda, data.y, save_results)
+
+        train_lda = self.lda.transform(train_bow)
+        train_lda = self.bowder.normalise_bow(train_lda, use_norm='l2')
+
+        self.lda_l2_classifier.evaluate(train_lda, data.y, save_results)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), data.structured_data], axis=-1)
+            self.lda_l2_structured_classifier.evaluate(train_lda, data.y, save_results)
+
+        pickle.dump(self.lda, open(self.lda_file, 'wb'))
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]

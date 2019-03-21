@@ -111,21 +111,22 @@ class BoWder :
             bow = bow.todense()
         return bow
 
-    def normalise_bow(self, bow) :
-        if self.norm is not None :
-            print("Normalising using " + str(self.norm))
-            if self.norm.startswith('l') :
+    def normalise_bow(self, bow, use_norm=None) :
+        if self.norm is not None or use_norm is not None:
+            use_norm = use_norm if use_norm is not None else self.norm
+            print("Normalising using " + str(use_norm))
+            if use_norm.startswith('l') :
                 print('Using Norm from linalg')
                 if issparse(bow) :
-                    norm_l = sparse_norm(bow, int(self.norm[1]), axis=1)
+                    norm_l = sparse_norm(bow, int(use_norm[1]), axis=1)
                 else :
-                    norm_l = dense_norm(bow, int(self.norm[1]), axis=1)
+                    norm_l = dense_norm(bow, int(use_norm[1]), axis=1)
                 norm_l = np.where(norm_l == 0, 1.0, norm_l)
                 bow = bow / norm_l[:, None]
                 print("Multiplying by constant , ", self.constant_mul)
                 bow = bow * self.constant_mul
             else :
-                bow = normalize(bow, norm=self.norm, copy=False)
+                bow = normalize(bow, norm=use_norm, copy=False)
 
         return bow
 
