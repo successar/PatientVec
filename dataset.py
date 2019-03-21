@@ -135,6 +135,12 @@ class Dataset() :
 
         data.X = [remove_n_words(data.X[i], x - filter_perc) for i, x in enumerate(total_sentence_length)]
         logging.info("Truncated all ...")
+        
+        empty_doc = [sum([len(y) for y in x]) for x in data.X]
+        idxs = np.where(np.array(empty_doc) == 2)[0]
+        idxs_to_keep = list(set(range(len(data.X))) - set(idxs))
+        data = data.filter(idxs_to_keep)
+        logging.info('Idxs removed %s...', list(idxs))
         return data
 
 def remove_n_words(X, n) :

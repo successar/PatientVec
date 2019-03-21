@@ -90,11 +90,15 @@ class BoWder :
         print("TFIDFing ...")
         bow = self.tfidftransform.transform(bow)
         bow = self.normalise_bow(bow)
+        if issparse(bow) :
+            bow = bow.todense()
         return bow
     
     def get_bow(self, X) :
         bow = self.generate_bow(X)
-        bow = self.normalise_bow(bow)        
+        bow = self.normalise_bow(bow) 
+        if issparse(bow) :
+            bow = bow.todense()
         return bow
 
     def get_binary_bow(self, X) :
@@ -103,6 +107,8 @@ class BoWder :
         bow = np.clip(bow.todense(), 0, 1)
         assert (bow > 1).sum() == 0, (bow > 1).sum()
         bow = self.normalise_bow(bow)
+        if issparse(bow) :
+            bow = bow.todense()
         return bow
 
     def normalise_bow(self, bow) :

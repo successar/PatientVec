@@ -61,7 +61,7 @@ def sru_experiments(data, args) :
         print(config)
 
         trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, save_on_metric=data.save_on_metric)
+        trainer.train(train_data, dev_data, n_iters=10, save_on_metric=data.save_on_metric)
 
         evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
         _ = evaluator.evaluate(dev_data, save_results=True)
@@ -144,5 +144,6 @@ experiment_types = {
     'hierarchical' : hierarchical_experiments,
     'structured' : structured_attention_experiments,
     'lr' : lr_experiments,
-    'vector' : vector_experiments
+    'vector' : vector_experiments,
+    'sru' : sru_experiments
 }
