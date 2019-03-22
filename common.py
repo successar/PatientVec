@@ -118,7 +118,7 @@ def get_latest_model(dirname) :
     max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
     return os.path.join(dirname, max_dir)
 
-from metrics import print_metrics
+from PatientVec.metrics import print_metrics
 def print_results_from_model(dirname) :
     assert 'evaluate.json' in os.listdir(dirname)
     metrics = json.load(open(os.path.join(dirname, 'evaluate.json')))
