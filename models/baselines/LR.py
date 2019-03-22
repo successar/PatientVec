@@ -83,14 +83,16 @@ class LR :
         self.lda_structured_classifier = Classifier(self, 'LDA+Structured', lda_structured_dirname)
         self.lda_l2_structured_classifier = Classifier(self, 'LDA+l2+Structured', lda_l2_structured_dirname)
 
-        self.lda_file = os.path.join(lda_dirname, 'lda_object.p')
+        self.lda_file = os.path.join(os.path.dirname(lda_dirname), 'lda_object.p')
+        print(self.lda_file)
 
     def train_lda(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]
         
         train_bow = self.bowder.get_bow(docs)
-        self.lda = LatentDirichletAllocation(n_components=50, learning_method='online', verbose=1, n_jobs=4)
+        self.lda = LatentDirichletAllocation(n_components=50, learning_method='online', verbose=1)
         self.lda.fit(train_bow)
+        pickle.dump(self.lda, open(self.lda_file, 'wb'))
 
         train_lda = self.lda.transform(train_bow)
 
@@ -125,8 +127,6 @@ class LR :
         if self.has_structured :
             train_lda = np.concatenate([np.array(train_lda), data.structured_data], axis=-1)
             self.lda_l2_structured_classifier.evaluate(train_lda, data.y, save_results)
-
-        pickle.dump(self.lda, open(self.lda_file, 'wb'))
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]

@@ -53,6 +53,7 @@ def basic_experiments(data, configs, args) :
 def training_size_experiments(data, configs, args) :
     structured = vars(args).get('structured', True)
     train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    np.random.seed(args.seed)
     train_data = train_data.sample(n=args.n)
 
     for e in configs :
@@ -63,8 +64,9 @@ def training_size_experiments(data, configs, args) :
             config = args.modify_config(config)
         print(config)
 
+        n_iters = vars(args).get('n_iters', 10)
         trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, save_on_metric=data.save_on_metric)
+        trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
 
         evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
         _ = evaluator.evaluate(dev_data, save_results=True)
