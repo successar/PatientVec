@@ -157,6 +157,10 @@ class DataHolder() :
         data_kwargs = { key: getattr(self, key)[:n] for key in self.attributes}
         return DataHolder(**data_kwargs)
 
+    def sample(self, n) :
+        sample = np.random.choice(range(len(self.X)), size=n, replace=False)
+        return self.filter(sample)
+
     def filter(self, idxs) :
         data_kwargs = { key: [getattr(self, key)[i] for i in idxs] for key in self.attributes}
         return DataHolder(**data_kwargs)

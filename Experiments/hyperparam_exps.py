@@ -3,6 +3,7 @@ from PatientVec.models.Vanilla import ClassificationTrainer as BasicCT
 from PatientVec.models.Hierarchical import ClassificationTrainer as HierCT
 from PatientVec.trainer import Trainer, Evaluator
 from PatientVec.Experiments.modifiable_config_exp import *
+from PatientVec.common import *
 
 def get_basic_data(data, truncate=90, structured=True, encodings=None) :
     train_data = data.filter_data_length(data.get_data('train', structured=structured, encodings=encodings), truncate=truncate)
@@ -28,6 +29,65 @@ def vanilla_experiments(data, args) :
         evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
         _ = evaluator.evaluate(dev_data, save_results=True)
         print('='*300)
+
+def basic_experiments(data, configs, args) :
+    structured = vars(args).get('structured', True)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+
+    for e in configs :
+        config = e(data, structured=structured, args=args)
+        if args.output_dir is not None :
+            config['exp_config']['basepath'] = args.output_dir
+        if hasattr(args, 'modify_config') :
+            config = args.modify_config(config)
+        print(config)
+
+        n_iters = vars(args).get('n_iters', 10)
+        trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
+        trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+
+        evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
+        _ = evaluator.evaluate(dev_data, save_results=True)
+        print('='*300)
+
+def training_size_experiments(data, configs, args) :
+    structured = vars(args).get('structured', True)
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data = train_data.sample(n=args.n)
+
+    for e in configs :
+        config = e(data, structured=structured, args=args)
+        if args.output_dir is not None :
+            config['exp_config']['basepath'] = args.output_dir + '/ts_experiments/n=' + str(args.n)
+        if hasattr(args, 'modify_config') :
+            config = args.modify_config(config)
+        print(config)
+
+        trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
+        trainer.train(train_data, dev_data, save_on_metric=data.save_on_metric)
+
+        evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
+        _ = evaluator.evaluate(dev_data, save_results=True)
+        print('='*300)
+
+def diagnosis_pretrained_experiments(data, args) :
+    structured = True
+    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+
+    config = LSTM(data, structured=structured, args=args)
+    if args.output_dir is not None :
+        config['exp_config']['basepath'] = args.output_dir
+    if hasattr(args, 'modify_config') :
+        config = args.modify_config(config)
+    print(config)
+
+    trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
+    trainer.load_pretrained_model(get_latest_model('outputs/Diagnosis/Basic/LSTM(hs=128)+Structured'))
+    trainer.train(train_data, dev_data, save_on_metric=data.save_on_metric)
+
+    evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
+    _ = evaluator.evaluate(dev_data, save_results=True)
+    print('='*300)
 
 def attention_experiments(data, args) :
     structured = vars(args).get('structured', True)
@@ -145,5 +205,8 @@ experiment_types = {
     'structured' : structured_attention_experiments,
     'lr' : lr_experiments,
     'vector' : vector_experiments,
-    'sru' : sru_experiments
+    'sru' : sru_experiments,
+    'basic' : basic_experiments,
+    'ts_experiments' : lambda d, a : training_size_experiments(d, [Average, LSTM, LSTM_with_attention], a)
 }
+
