@@ -26,6 +26,7 @@ config = {'vocab' : data.vocab,
           'has_structured' : True, 
           'lda' : False, 
           'methods' : ['count'],
+          'only_structured' : True,
           'basepath' : args.output_dir}
 
 lr = LR(config)
@@ -45,6 +46,7 @@ config = {'vocab' : data.vocab,
           'has_structured' : True, 
           'lda' : False, 
           'methods' : ['count'],
+          'only_structured' : True,
           'basepath' : args.output_dir}
 
 lr = LR(config)

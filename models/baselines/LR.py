@@ -19,6 +19,10 @@ class Classifier :
         self.classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
         self.metrics = lr_model.metrics
 
+    def fit(self, X, y) :
+        print("Fitting ... ", self.name)
+        self.classifier.fit(X, y)
+
     def evaluate(self, X, y, save_results) :
         pred = normalise_output(np.array(self.classifier.predict_proba(X)))
         metrics = self.metrics(y, pred)
@@ -41,6 +45,7 @@ class LR :
         self.norm = config.get('norm', None)
         self.constant_mul = config.get('constant_mul', 1.0)
         self.has_structured = config.get('structured', True)
+        self.only_structured = config.get('only_structured', False)
         self.basepath = config.get('basepath', 'outputs')
 
         self.time_str = time.ctime().replace(' ', '_')
@@ -99,18 +104,18 @@ class LR :
 
         train_lda = self.lda.transform(train_bow)
 
-        self.lda_classifier.classifier.fit(train_lda, train_data.y)
+        self.lda_classifier.fit(train_lda, train_data.y)
         if self.has_structured :
             train_lda = np.concatenate([np.array(train_lda), train_data.structured_data], axis=-1)
-            self.lda_structured_classifier.classifier.fit(train_lda, train_data.y)
+            self.lda_structured_classifier.fit(train_lda, train_data.y)
 
         train_lda = self.lda.transform(train_bow)
         train_lda = self.bowder.normalise_bow(train_lda, use_norm='l2')
 
-        self.lda_l2_classifier.classifier.fit(train_lda, train_data.y)
+        self.lda_l2_classifier.fit(train_lda, train_data.y)
         if self.has_structured :
             train_lda = np.concatenate([np.array(train_lda), train_data.structured_data], axis=-1)
-            self.lda_l2_structured_classifier.classifier.fit(train_lda, train_data.y)
+            self.lda_l2_structured_classifier.fit(train_lda, train_data.y)
 
     def evaluate_lda(self, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
@@ -136,21 +141,23 @@ class LR :
         
         if 'count' in self.methods :
             train_bow = self.bowder.get_bow(docs)
-            self.bow_classifier.classifier.fit(train_bow, train_data.y)
+            if not self.only_structured :
+                self.bow_classifier.fit(train_bow, train_data.y)
 
             if self.has_structured :
                 train_bow = np.concatenate([np.array(train_bow), train_data.structured_data], axis=-1)
-                self.bow_with_structured_classifier.classifier.fit(train_bow, train_data.y)
+                self.bow_with_structured_classifier.fit(train_bow, train_data.y)
 
             del train_bow
 
         if 'binary' in self.methods :
             train_bow = self.bowder.get_binary_bow(docs)
-            self.binbow_classifier.classifier.fit(train_bow, train_data.y)
+            if not self.only_structured :
+                self.binbow_classifier.fit(train_bow, train_data.y)
 
             if self.has_structured :
                 train_bow = np.concatenate([np.array(train_bow), train_data.structured_data], axis=-1)
-                self.binbow_with_structured_classifier.classifier.fit(train_bow, train_data.y)
+                self.binbow_with_structured_classifier.fit(train_bow, train_data.y)
 
             del train_bow
             
@@ -158,22 +165,25 @@ class LR :
             self.bowder.fit_tfidf(docs)
             train_tf = self.bowder.get_tfidf(docs)
 
-            self.tf_idf_classifier.classifier.fit(train_tf, train_data.y)
+            if not self.only_structured :
+                self.tf_idf_classifier.fit(train_tf, train_data.y)
+                
             if self.has_structured :
                 train_tf = np.concatenate([np.array(train_tf), train_data.structured_data], axis=-1)
-                self.tf_idf_with_structured_classifier.classifier.fit(train_tf, train_data.y)
+                self.tf_idf_with_structured_classifier.fit(train_tf, train_data.y)
 
             del train_tf
 
         if self.has_structured :
-            self.structured_classifier.classifier.fit(train_data.structured_data, train_data.y)
+            self.structured_classifier.fit(train_data.structured_data, train_data.y)
 
     def evaluate(self, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
 
         if 'count' in self.methods :
             train_bow = self.bowder.get_bow(docs)
-            self.bow_classifier.evaluate(train_bow, data.y, save_results)
+            if not self.only_structured :
+                self.bow_classifier.evaluate(train_bow, data.y, save_results)
 
             if self.has_structured :
                 train_bow = np.concatenate([np.array(train_bow), data.structured_data], axis=-1)
@@ -183,7 +193,8 @@ class LR :
 
         if 'binary' in self.methods :
             train_bow = self.bowder.get_binary_bow(docs)
-            self.binbow_classifier.evaluate(train_bow, data.y, save_results)
+            if not self.only_structured :
+                self.binbow_classifier.evaluate(train_bow, data.y, save_results)
 
             if self.has_structured :
                 train_bow = np.concatenate([np.array(train_bow), data.structured_data], axis=-1)
@@ -195,7 +206,9 @@ class LR :
             self.bowder.fit_tfidf(docs)
             train_tf = self.bowder.get_tfidf(docs)
 
-            self.tf_idf_classifier.evaluate(train_tf, data.y, save_results)
+            if not self.only_structured :
+                self.tf_idf_classifier.evaluate(train_tf, data.y, save_results)
+                
             if self.has_structured :
                 train_tf = np.concatenate([np.array(train_tf), data.structured_data], axis=-1)
                 self.tf_idf_with_structured_classifier.evaluate(train_tf, data.y, save_results)
