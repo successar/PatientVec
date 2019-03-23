@@ -17,10 +17,18 @@ args.n_iters = 8
 
 configs = [LSTM, LSTM_with_attention]
 
-data = dataloaders.dataloaders['readmission'](args)
+# data = dataloaders.dataloaders['readmission'](args)
+# basic_experiments(data, configs, args)
+
+# del data
+
+# data = dataloaders.dataloaders['diagnosis'](args)
+# basic_experiments(data, configs, args)
+
+data = dataloaders.dataloaders['mortality_30day'](args)
 basic_experiments(data, configs, args)
 
 del data
 
-data = dataloaders.dataloaders['diagnosis'](args)
+data = dataloaders.dataloaders['mortality_1yr'](args)
 basic_experiments(data, configs, args)

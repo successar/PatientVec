@@ -112,11 +112,16 @@ import time
 from collections import defaultdict
 
 def get_latest_model(dirname) :
-    dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    dirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d)) and 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
     if len(dirs) == 0 :
         return None
     max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
     return os.path.join(dirname, max_dir)
+
+def get_all_model(dirname) :
+    dirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d)) and 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    dirs = [os.path.join(dirname, d) for d in dirs]
+    return dirs
 
 from PatientVec.metrics import print_metrics
 def print_results_from_model(dirname) :
