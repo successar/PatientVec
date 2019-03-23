@@ -75,17 +75,30 @@ def training_size_experiments(data, configs, args) :
 def diagnosis_pretrained_experiments(data, args) :
     structured = True
     train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    if 'n' in vars(args) :
+        print("Sampling ", args.n)
+        np.random.seed(args.seed)
+        train_data = train_data.sample(n=args.n)
 
     config = LSTM(data, structured=structured, args=args)
     if args.output_dir is not None :
         config['exp_config']['basepath'] = args.output_dir
+        if 'n' in vars(args) :
+            config['exp_config']['basepath'] = args.output_dir + '/ts_experiments/n=' + str(args.n)
     if hasattr(args, 'modify_config') :
         config = args.modify_config(config)
+
+    config['exp_config']['exp_name'] += '+Pretrained'
     print(config)
 
     trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
-    trainer.load_pretrained_model(get_latest_model('outputs/Diagnosis/Basic/LSTM(hs=128)+Structured'))
-    trainer.train(train_data, dev_data, save_on_metric=data.save_on_metric)
+    phenotype_model = get_latest_model(os.path.join('outputs', data.name + '_hcup', 'Basic', 'LSTM(hs=128)+Structured'))
+    if phenotype_model is None :
+        raise LookupError("Phenotype model not available")
+    trainer.load_pretrained_model(phenotype_model)
+
+    n_iters = vars(args).get('n_iters', 10)
+    trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
 
     evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
     _ = evaluator.evaluate(dev_data, save_results=True)
@@ -209,6 +222,7 @@ experiment_types = {
     'vector' : vector_experiments,
     'sru' : sru_experiments,
     'basic' : basic_experiments,
-    'ts_experiments' : lambda d, a : training_size_experiments(d, [Average, LSTM, LSTM_with_attention], a)
+    'ts_experiments' : lambda d, a : training_size_experiments(d, [Average, LSTM, LSTM_with_attention], a),
+    'pretrained' : diagnosis_pretrained_experiments
 }
 
