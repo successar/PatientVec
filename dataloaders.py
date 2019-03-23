@@ -1,5 +1,6 @@
 from PatientVec.dataset import Dataset
 import os
+import numpy as np
 
 def readmission_dataset(args) :
     data = Dataset(name='Readmission', dirname=os.path.join(args.data_dir, 'preprocess/Readmission/'))
@@ -18,6 +19,28 @@ def readmission_dataset(args) :
     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
     
     data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']
+    
+    return data
+
+def readmission_hcup_dataset(args) :
+    data = Dataset(name='Readmission_hcup', dirname=os.path.join(args.data_dir, 'preprocess/Readmission/'))
+
+    cols = [x for x in data.dataframe.columns if x.startswith('hcup')]
+    topcols = np.array(cols)[(data.dataframe[cols].mean() > 0.10).values]
+    labellist = list(topcols)
+    data.generate_labels(labellist, len(labellist), 'multilabel')
+    data.save_on_metric = 'macro_roc_auc'
+    data.metrics_type = 'multilabel'
+
+    data.generate_encoded_field('gender_y', 'onehot')
+    data.generate_encoded_field('age_y', 'onehot')
+    data.generate_encoded_field('ethnicity_y', 'onehot')
+    features = [x for x in data.dataframe.columns if x.startswith('feature')]
+    for f in features :
+        data.generate_encoded_field(f, 'trivial')
+    data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    
+    data.keys_to_use = ['macro_roc_auc', 'macro_pr_auc']
     
     return data
 
@@ -41,6 +64,31 @@ def mortality_dataset(args, _type) :
     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
     
     data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']
+    
+    return data
+
+def mortality_hcup_dataset(args, _type) :
+    data = Dataset(name='Mortality_'+_type + '_hcup', dirname=os.path.join(args.data_dir, 'preprocess/Mortality/'))
+
+    cols = [x for x in data.dataframe.columns if x.startswith('hcup')]
+    topcols = np.array(cols)[(data.dataframe[cols].mean() > 0.10).values]
+    labellist = list(topcols)
+    data.generate_labels(labellist, len(labellist), 'multilabel')
+    data.save_on_metric = 'macro_roc_auc'
+    data.metrics_type = 'multilabel'
+
+    data.generate_encoded_field('gender_y', 'onehot')
+    data.generate_encoded_field('age_y', 'onehot')
+    data.generate_encoded_field('ethnicity_y', 'onehot')
+    features = [x for x in data.dataframe.columns if x.startswith('feature')]
+    for f in features :
+        if 'sapsii' not in f :
+            data.generate_encoded_field(f, 'trivial')
+        else :
+            data.generate_encoded_field(f, 'scale', {'m' : 0, 'M' : 163})
+    data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    
+    data.keys_to_use = ['macro_roc_auc', 'macro_pr_auc']
     
     return data
 
@@ -106,5 +154,7 @@ dataloaders = {
     'mortality_1yr' : lambda x : mortality_dataset(x, '1yr'),
     'diagnosis' : diagnosis_dataset,
     'hip' : hip_dataset,
-    'knee' : knee_dataset
+    'knee' : knee_dataset,
+    'readmission_hcup' : readmission_hcup_dataset,
+    'mortality_30day_hcup' : lambda x : mortality_hcup_dataset(x, '30day')
 }
