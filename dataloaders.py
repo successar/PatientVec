@@ -2,6 +2,40 @@ from PatientVec.dataset import Dataset
 import os
 import numpy as np
 
+def pneumonia_dataset(args) :
+    data = Dataset(name='Pneumonia', dirname=os.path.join(args.data_dir, 'preprocess/Pneumonia/'))
+
+    labellist = [args.label_field]
+    data.generate_labels(labellist, len(labellist), 'binary')
+    data.save_on_metric = 'roc_auc'
+    data.metrics_type = 'classifier'
+
+    features = [x for x in data.dataframe.columns if x.startswith('feature')]
+    for f in features :
+        data.generate_encoded_field(f, 'trivial')
+    data.set_structured_params(regexs=[r'^feature'])
+    
+    data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']
+    
+    return data
+
+def immunosuppressed_dataset(args) :
+    data = Dataset(name='Immunosuppressed', dirname=os.path.join(args.data_dir, 'preprocess/Immunosuppressed/'))
+
+    labellist = [args.label_field]
+    data.generate_labels(labellist, len(labellist), 'binary')
+    data.save_on_metric = 'roc_auc'
+    data.metrics_type = 'classifier'
+
+    features = [x for x in data.dataframe.columns if x.startswith('feature')]
+    for f in features :
+        data.generate_encoded_field(f, 'trivial')
+    data.set_structured_params(regexs=[r'^feature'])
+    
+    data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']
+    
+    return data
+
 def readmission_dataset(args) :
     data = Dataset(name='Readmission', dirname=os.path.join(args.data_dir, 'preprocess/Readmission/'))
 
@@ -158,5 +192,7 @@ dataloaders = {
     'hip_1yr' : lambda x : hip_dataset(x, 1),
     'knee_1yr' : lambda x : knee_dataset(x, 1),
     'readmission_hcup' : readmission_hcup_dataset,
-    'mortality_30day_hcup' : lambda x : mortality_hcup_dataset(x, '30day')
+    'mortality_30day_hcup' : lambda x : mortality_hcup_dataset(x, '30day'),
+    'pneumonia' : pneumonia_dataset,
+    'immuno' : immunosuppressed_dataset
 }
