@@ -1,0 +1,21 @@
+ID,S1,S2,text,label
+1,0.1,0.4,"Nose Pneumonia",0
+2,0.4,0.9,"Diabetes Pneumonia",1
+3,0.8,0.1,"Hypertension Diabetes",0
+4,0.9,0.3,"Mouth Hypertension",1
+10,0.1,0.4,"Nose Pneumonia",0
+20,0.4,0.9,"Diabetes Pneumonia",1
+30,0.8,0.1,"Hypertension Diabetes",0
+40,0.9,0.3,"Mouth Hypertension",1
+11,0.1,0.4,"Nose Pneumonia",0
+21,0.4,0.9,"Diabetes Pneumonia",1
+31,0.8,0.1,"Hypertension Diabetes",0
+41,0.9,0.3,"Mouth Hypertension",1
+101,0.1,0.4,"Nose Pneumonia",0
+201,0.4,0.9,"Diabetes Pneumonia",1
+301,0.8,0.1,"Hypertension Diabetes",0
+401,0.9,0.3,"Mouth Hypertension",1
+111,0.1,0.4,"Nose Pneumonia",0
+211,0.4,0.9,"Diabetes Pneumonia",1
+311,0.8,0.1,"Hypertension Diabetes",0
+411,0.9,0.3,"Mouth Hypertension",1

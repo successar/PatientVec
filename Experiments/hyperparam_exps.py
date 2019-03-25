@@ -21,6 +21,7 @@ def basic_experiments(data, configs, args) :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
             config = args.modify_config(config)
+        config['training_config']['common']['bsize'] = 16
         print(config)
 
         n_iters = vars(args).get('n_iters', 10)
@@ -114,6 +115,8 @@ def hierarchical_experiments(data, args) :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
             config = args.modify_config(config)
+            
+        config['training_config']['groups'][0][1]['lr'] = 0.0001
         print(config)
         
         trainer = Trainer(HierCT, config, _type=data.metrics_type, display_metrics=args.display)
@@ -200,6 +203,7 @@ experiment_types = {
     'vector' : vector_experiments,
     'basic' : basic_experiments,
     'ts_experiments' : lambda d, a : training_size_experiments(d, [Average, LSTM, LSTM_with_attention], a),
-    'pretrained' : diagnosis_pretrained_experiments
+    'pretrained' : diagnosis_pretrained_experiments,
+    'lda' : lda_experiments
 }
 

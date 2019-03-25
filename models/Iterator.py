@@ -68,6 +68,7 @@ class Hierarchical_Generator() :
         self.batch_size = batch_size
 
         if sort_and_shuffle and balanced :
+            print("balancing")
             assert len(np.unique(np.array(train_data.y)[:, 0])) <= 2, "Data is not binary"
             self.valid_idxs_0 = [i for i in self.valid_idxs if train_data.y[i][0] == 0]
             self.valid_idxs_1 = [i for i in self.valid_idxs if train_data.y[i][0] == 1]
