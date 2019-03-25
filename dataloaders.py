@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 def pneumonia_dataset(args) :
-    data = Dataset(name='Pneumonia', dirname=os.path.join(args.data_dir, 'preprocess/Pneumonia/'))
+    data = Dataset(name='Pneumonia', dirname=args.data_dir)
 
     labellist = [args.label_field]
     data.generate_labels(labellist, len(labellist), 'binary')
@@ -20,7 +20,7 @@ def pneumonia_dataset(args) :
     return data
 
 def immunosuppressed_dataset(args) :
-    data = Dataset(name='Immunosuppressed', dirname=os.path.join(args.data_dir, 'preprocess/Immunosuppressed/'))
+    data = Dataset(name='Immunosuppressed', dirname=args.data_dir)
 
     labellist = [args.label_field]
     data.generate_labels(labellist, len(labellist), 'binary')
