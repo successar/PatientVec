@@ -155,6 +155,8 @@ dataloaders = {
     'diagnosis' : diagnosis_dataset,
     'hip' : hip_dataset,
     'knee' : knee_dataset,
+    'hip_1yr' : lambda x : hip_dataset(x, 1),
+    'knee_1yr' : lambda x : knee_dataset(x, 1),
     'readmission_hcup' : readmission_hcup_dataset,
     'mortality_30day_hcup' : lambda x : mortality_hcup_dataset(x, '30day')
 }

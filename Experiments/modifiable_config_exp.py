@@ -134,5 +134,3 @@ def MLP(data, structured, args) :
     return config
 
 vector_configs = [LR, MLP]
-
-sru_configs = [SRU_with_conditional_attention]

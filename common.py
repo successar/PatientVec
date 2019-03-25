@@ -40,7 +40,8 @@ def plot_entropy(X, attn) :
 
     plt.scatter(unif_H, attn_H, s=1)
 
-def print_attn(sentence, attention, idx=None, latex=False) :
+def print_attn(sentence, attention, highlight_idx=None, latex=False) :
+    #Sentences is the list of words, #attention is list of attention weight for that sentence in order
     l = []
     latex_str = []
     for i, (w, a) in enumerate(zip(sentence, attention)) :
@@ -49,7 +50,7 @@ def print_attn(sentence, attention, idx=None, latex=False) :
         w = re.sub('>', '&gt;', w)
         
         add_string = ''
-        if idx is not None and i == idx :
+        if highlight_idx is not None and i in highlight_idx :
             add_string = "border-style : solid;"
         
         v = "{:.2f}".format((1-a) * -0.5 + 0.5)

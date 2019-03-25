@@ -44,7 +44,7 @@ class LR :
         self.metrics = metrics_map[config['type']]
         self.norm = config.get('norm', None)
         self.constant_mul = config.get('constant_mul', 1.0)
-        self.has_structured = config.get('structured', True)
+        self.has_structured = config.get('has_structured', True)
         self.only_structured = config.get('only_structured', False)
         self.basepath = config.get('basepath', 'outputs')
 
