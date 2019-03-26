@@ -16,7 +16,7 @@ args.extras = extras
 args.output_dir = os.path.join(args.output_dir, 'confidence')
 args.n_iters = 8
 
-configs = [CNN, CNN_with_attention]
+configs = [LSTM, LSTM_with_attention, CNN, CNN_with_attention]
 
 data = dataloaders.dataloaders[args.dataset](args)
 basic_experiments(data, configs, args)
