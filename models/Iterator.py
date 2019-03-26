@@ -59,7 +59,7 @@ class Hierarchical_Generator() :
 
         if sort_and_shuffle :
             max_sentence_length = [max([len(x) for x in y]) for y in docs]
-            sorting_idx = get_sorting_index_with_noise_from_lengths(max_sentence_length, noise_frac=0.1)
+            sorting_idx = get_sorting_index_with_noise_from_lengths(max_sentence_length, noise_frac=0.0)
             self.valid_idxs = [self.valid_idxs[i] for i in sorting_idx]
 
         self.N = len(self.valid_idxs)
