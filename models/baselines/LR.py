@@ -16,7 +16,7 @@ class Classifier :
     def __init__(self, lr_model, name, dirname) :
         self.name = name
         self.dirname = dirname
-        self.classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
+        self.classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1', C=lr_model.penalty), n_jobs=8)
         self.metrics = lr_model.metrics
 
     def fit(self, X, y) :
@@ -47,11 +47,16 @@ class LR :
         self.has_structured = config.get('has_structured', True)
         self.only_structured = config.get('only_structured', False)
         self.basepath = config.get('basepath', 'outputs')
+        self.penalty = config.get('penalty', 1.0)
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
         
-        self.gen_dirname = lambda x : os.path.join(self.basepath, self.exp_name, 'baselines', x, self.time_str)
+        basename = 'baselines'
+        if self.penalty != 1.0 :
+            basename = 'baselines_' + str(self.penalty)
+            
+        self.gen_dirname = lambda x : os.path.join(self.basepath, self.exp_name, basename, x, self.time_str)
         if config.get('lda', False) :
             print("Setting up LDA ...")
             self.init_lda(config)
