@@ -55,7 +55,6 @@ class Vector_Generator() :
 class Hierarchical_Generator() :
     def __init__(self, train_data, batch_size, sort_and_shuffle=True, balanced=False) :
         docs = train_data.X
-
         self.valid_idxs = list(range(len(docs)))
 
         if sort_and_shuffle :

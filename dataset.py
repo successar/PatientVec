@@ -155,4 +155,8 @@ def remove_n_words(X, n) :
 
     if new_X[0][0] != 2 :
         new_X[0] = [2] + new_X[0]
-    return new_X
+    new_XX = []
+    for x in new_X :
+        if len(x) > 2 :
+            new_XX.append(x)
+    return new_XX

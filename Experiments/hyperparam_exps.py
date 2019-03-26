@@ -108,7 +108,7 @@ def diagnosis_pretrained_experiments(data, args) :
 def hierarchical_experiments(data, args) :
     structured = vars(args).get('structured', True)
     train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
-
+    
     for e in hierarchical_configs :
         config = e(data, structured=structured, args=args)
         if args.output_dir is not None :
@@ -116,11 +116,12 @@ def hierarchical_experiments(data, args) :
         if hasattr(args, 'modify_config') :
             config = args.modify_config(config)
             
-        config['training_config']['groups'][0][1]['lr'] = 0.0001
+        config['training_config']['common']['bsize'] = vars(args).get('bsize', 16)
         print(config)
         
+        n_iters = vars(args).get('n_iters', 10)
         trainer = Trainer(HierCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, n_iters=10, save_on_metric=data.save_on_metric)
+        trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
 
         evaluator = Evaluator(HierCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
         _ = evaluator.evaluate(dev_data, save_results=True)

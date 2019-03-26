@@ -261,12 +261,18 @@ class HierarchicalClassifierWithAttention(nn.Module, from_params.FromParams) :
         h_w, hseq_w = self.word_encoder(embedding, flatten_data.lengths) #(B, H), #(B, L, H)
         
         attn_w = self.word_attention(hseq_w, flatten_data.masks) #(B, L)
+        if torch.isnan(attn_w).any() :
+            import pdb; pdb.set_trace()
+            
         mix_w = torch.bmm(attn_w.unsqueeze(1), hseq_w).squeeze(1) #(B*S, H)
         unflatten_mix = data.unflatten(mix_w) #(B, S, H)
 
         h_s, hseq_s = self.sentence_encoder(unflatten_mix, data.doclens)
 
         attn_s = self.sentence_attention(hseq_s, data.flatten_mask)
+        if torch.isnan(attn_s).any() :
+            import pdb; pdb.set_trace()
+            
         mix_s = torch.bmm(attn_s.unsqueeze(1), hseq_s).squeeze(1)
 
         if self.structured['use_structured'] :
