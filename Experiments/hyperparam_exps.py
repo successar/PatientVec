@@ -74,6 +74,9 @@ def training_size_experiments(data, configs, args) :
     structured = vars(args).get('structured', True)
     train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     np.random.seed(args.seed)
+    if len(train_data.X) < args.n :
+        print("Less train than n", args.n, len(train_data.X))
+        return
     train_data = train_data.sample(n=args.n)
 
     for e in configs :

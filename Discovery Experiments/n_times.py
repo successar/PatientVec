@@ -3,6 +3,7 @@ from PatientVec.Experiments.hyperparam_exps import *
 
 import argparse
 parser = argparse.ArgumentParser(description='Run confidence experiments on a dataset')
+parser.add_argument("--dataset", type=str, required=True)
 parser.add_argument("--data_dir", type=str, required=True)
 parser.add_argument('--display', dest='display', action='store_true')
 parser.add_argument('--n', type=int, required=True)
@@ -20,5 +21,6 @@ args.seed = 16348
 
 # del data
 
-data = dataloaders.dataloaders['mortality_30day'](args)
+data = dataloaders.dataloaders[args.dataset](args)
+args.structured = data.structured_dim > 0
 experiment_types['ts_experiments'](data, args)
