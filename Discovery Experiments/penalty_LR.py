@@ -10,48 +10,29 @@ parser.add_argument('--display', dest='display', action='store_true')
 parser.add_argument("--output_dir", type=str)
 parser.add_argument('--structured', dest='structured', action='store_true')
 parser.add_argument('--penalty', type=float, required=True)
-parser.add_argument('--type', type=str, required=True)
 
 args, extras = parser.parse_known_args()
 args.extras = extras
 
-args.n_iters = 8
-
 data = dataloaders.dataloaders[args.dataset](args)
-train_data, dev_data = get_basic_data(data, structured=args.structured, truncate=90)
+train_data, dev_data, test_data = get_basic_data(data, structured=args.structured, truncate=90)
 
-config = {'vocab' : data.vocab, 
+for norm in [None, 'l1', 'l2'] :
+    config = {'vocab' : data.vocab, 
               'stop_words' : True, 
               'exp_name' : data.name, 
-              'type' : data.metrics_type, 
-              'norm' : 'l2', 
-              'constant_mul' : 1.0, 
-              'has_structured' : args.structured, 
-              'lda' : False, 
-              'methods' : [args.type],
-              'only_structured' : args.structured,
-              'basepath' : args.output_dir,
-              'penalty' : args.penalty}
+                'type' : data.metrics_type, 
+                'norm' : norm, 
+                'constant_mul' : 1.0, 
+                'has_structured' : args.structured, 
+                'lda' : False, 
+                'methods' : ['count', 'binary', 'tfidf'],
+                'only_structured' : args.structured,
+                'basepath' : args.output_dir,
+                'penalty' : args.penalty}
 
-print(config)
-lr = LR(config)
-lr.train(train_data)
-lr.evaluate(dev_data, save_results=True)
-
-config = {'vocab' : data.vocab, 
-              'stop_words' : True, 
-              'exp_name' : data.name, 
-              'type' : data.metrics_type, 
-              'norm' : None, 
-              'constant_mul' : 1.0, 
-              'has_structured' : args.structured, 
-              'lda' : False, 
-              'methods' : [args.type],
-              'only_structured' : args.structured,
-              'basepath' : args.output_dir,
-              'penalty' : args.penalty}
-
-print(config)
-lr = LR(config)
-lr.train(train_data)
-lr.evaluate(dev_data, save_results=True)
+    print(config)
+    lr = LR(config)
+    lr.train(train_data)
+    lr.evaluate(name='dev', data=dev_data, save_results=True)
+    lr.evaluate(name='test', data=test_data, save_results=True)

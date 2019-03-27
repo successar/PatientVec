@@ -8,5 +8,7 @@
 #SBATCH --output=confidence_LR.%j.out               
 #SBATCH --error=confidence_LR.%j.err                
 #SBATCH --partition=general
+#SBATCH --mail-type=ALL    
+#SBATCH --mail-user=successar@gmail.com
 
-srun python /home/jain.sar/PatientVec/"Discovery Experiments"/confidence_interval_LR.py --data_dir="/scratch/jain.sar/PatientVec" --output_dir="/scratch/jain.sar/PatientVec/outputs" 
+srun python /home/jain.sar/PatientVec/"Discovery Experiments"/confidence_interval_LR.py --dataset=$dataset --data_dir="/scratch/jain.sar/PatientVec" --output_dir="/scratch/jain.sar/PatientVec/outputs" 

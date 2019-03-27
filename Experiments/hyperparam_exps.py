@@ -12,6 +12,8 @@ def get_basic_data(data, truncate=90, structured=True, encodings=None) :
     return train_data, dev_data, test_data
 
 def basic_experiments(data, configs, args) :
+    do_test = vars(args).get('do_test', False)
+    do_all = vars(args).get('do_all', False)
     structured = vars(args).get('structured', True)
     train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
 
@@ -24,17 +26,25 @@ def basic_experiments(data, configs, args) :
         config['training_config']['common']['bsize'] = 16
         print(config)
 
-        n_iters = vars(args).get('n_iters', 10)
         trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+            
+        if not do_test :
+            n_iters = vars(args).get('n_iters', 10)
+            trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+            dirname = trainer.model.dirname
+        else :
+            dirname = get_latest_model(os.path.dirname(trainer.model.dirname))
 
-        evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-        _ = evaluator.evaluate(test_data, save_results=True)
+        if do_test and has_test_results(dirname): continue
+
+        evaluator = Evaluator(BasicCT, dirname, _type=data.metrics_type, display_metrics=args.display)
+        evaluator.evaluate(dev_data, test_data, save_results=True)
         print('='*300)
         
 def structured_attention_experiments(data, configs, args) :
+    do_test = vars(args).get('do_test', False)
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90, encodings=data.structured_columns)
+    train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90, encodings=data.structured_columns)
 
     for e in configs :
         config = e(data, structured=structured, encodings=data.structured_columns, args=args)
@@ -45,15 +55,24 @@ def structured_attention_experiments(data, configs, args) :
         print(config)
 
         trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, save_on_metric=data.save_on_metric)
+        
+        if not do_test :
+            n_iters = vars(args).get('n_iters', 10)
+            trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+            dirname = trainer.model.dirname
+        else :
+            dirname = get_latest_model(os.path.dirname(trainer.model.dirname))
 
-        evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-        _ = evaluator.evaluate(dev_data, save_results=True)
+        if do_test and has_test_results(dirname): continue
+
+        evaluator = Evaluator(BasicCT, dirname, _type=data.metrics_type, display_metrics=args.display)
+        evaluator.evaluate(dev_data, test_data, save_results=True)
         print('='*300)
 
 def training_size_experiments(data, configs, args) :
+    do_test = vars(args).get('do_test', False)
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     np.random.seed(args.seed)
     train_data = train_data.sample(n=args.n)
 
@@ -65,17 +84,25 @@ def training_size_experiments(data, configs, args) :
             config = args.modify_config(config)
         print(config)
 
-        n_iters = vars(args).get('n_iters', 10)
         trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
 
-        evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-        _ = evaluator.evaluate(dev_data, save_results=True)
+        if not do_test :
+            n_iters = vars(args).get('n_iters', 10)
+            trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+            dirname = trainer.model.dirname
+        else :
+            dirname = get_latest_model(os.path.dirname(trainer.model.dirname))
+
+        if do_test and has_test_results(dirname): continue
+
+        evaluator = Evaluator(BasicCT, dirname, _type=data.metrics_type, display_metrics=args.display)
+        evaluator.evaluate(dev_data, test_data, save_results=True)
         print('='*300)
 
 def diagnosis_pretrained_experiments(data, args) :
+    do_test = vars(args).get('do_test', False)
     structured = True
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     if 'n' in vars(args) :
         print("Sampling ", args.n)
         np.random.seed(args.seed)
@@ -98,14 +125,21 @@ def diagnosis_pretrained_experiments(data, args) :
         raise LookupError("Phenotype model not available")
     trainer.load_pretrained_model(phenotype_model)
 
-    n_iters = vars(args).get('n_iters', 10)
-    trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+    if not do_test :
+        n_iters = vars(args).get('n_iters', 10)
+        trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+        dirname = trainer.model.dirname
+    else :
+        dirname = get_latest_model(os.path.dirname(trainer.model.dirname))
 
-    evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-    _ = evaluator.evaluate(dev_data, save_results=True)
+    if do_test and has_test_results(dirname): return
+
+    evaluator = Evaluator(BasicCT, dirname, _type=data.metrics_type, display_metrics=args.display)
+    evaluator.evaluate(dev_data, test_data, save_results=True)
     print('='*300)
             
 def hierarchical_experiments(data, args) :
+    do_test = vars(args).get('do_test', False)
     structured = vars(args).get('structured', True)
     train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     
@@ -119,35 +153,19 @@ def hierarchical_experiments(data, args) :
         config['training_config']['common']['bsize'] = vars(args).get('bsize', 16)
         print(config)
         
-        n_iters = vars(args).get('n_iters', 10)
         trainer = Trainer(HierCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
 
-        evaluator = Evaluator(HierCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-        _ = evaluator.evaluate(test_data, save_results=True)
-        print('='*300)
-        
-        
-def vector_experiments(data, args) :
-    structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
-    data.generate_bowder(train_data, stop_words=True, norm=args.norm)
-    train_data.X = data.get_vec_encoding(train_data, _type=args.bow_type)
-    dev_data.X = data.get_vec_encoding(dev_data, _type=args.bow_type)
-    
-    for e in vector_configs :
-        config = e(data, structured=structured, args=args)
-        if args.output_dir is not None :
-            config['exp_config']['basepath'] = args.output_dir
-        if hasattr(args, 'modify_config') :
-            config = args.modify_config(config)
-        print(config)
+        if not do_test :
+            n_iters = vars(args).get('n_iters', 10)
+            trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
+            dirname = trainer.model.dirname
+        else :
+            dirname = get_latest_model(os.path.dirname(trainer.model.dirname))
 
-        trainer = Trainer(VectorCT, config, _type=data.metrics_type, display_metrics=args.display)
-        trainer.train(train_data, dev_data, save_on_metric=data.save_on_metric)
+        if do_test and has_test_results(dirname): continue
 
-        evaluator = Evaluator(VectorCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-        _ = evaluator.evaluate(dev_data, save_results=True)
+        evaluator = Evaluator(HierCT, dirname, _type=data.metrics_type, display_metrics=args.display)
+        evaluator.evaluate(dev_data, test_data, save_results=True)
         print('='*300)
         
 from PatientVec.models.baselines.LR import LR
@@ -171,7 +189,7 @@ def lr_experiments(data, args) :
         print(config)
         print(lr.has_structured)
         lr.train(train_data)
-        lr.evaluate(test_data, save_results=True)
+        lr.evaluate(dev_data, save_results=True)
         
 def lda_experiments(data, args) :
     structured = vars(args).get('structured', True)
@@ -191,7 +209,7 @@ def lda_experiments(data, args) :
     print(config)
     print(lr.has_structured)
     lr.train_lda(train_data)
-    lr.evaluate_lda(test_data, save_results=True)
+    lr.evaluate_lda(dev_data, save_results=True)
 
 experiment_types = {
     'vanilla' : lambda data, args : basic_experiments(data, vanilla_configs, args),
@@ -201,7 +219,6 @@ experiment_types = {
     'structured' : lambda data, args : structured_attention_experiments(data, structured_configs, args),
     'structured_sru' : lambda data, args : structured_attention_experiments(data, [SRU_with_conditional_attention], args),
     'lr' : lr_experiments,
-    'vector' : vector_experiments,
     'basic' : basic_experiments,
     'ts_experiments' : lambda d, a : training_size_experiments(d, [Average, LSTM, LSTM_with_attention], a),
     'pretrained' : diagnosis_pretrained_experiments,

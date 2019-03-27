@@ -112,8 +112,19 @@ def push_graphs_to_main_directory(model, name) :
 import time
 from collections import defaultdict
 
+def has_test_results(dirname) :
+    files = os.listdir(dirname)
+    return 'test_evaluate.json' in files
+
 def get_latest_model(dirname) :
     dirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d)) and 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    if len(dirs) == 0 :
+        return None
+    max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
+    return os.path.join(dirname, max_dir)
+
+def get_latest_model_with_test(dirname) :
+    dirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d)) and 'test_evaluate.json' in os.listdir(os.path.join(dirname, d))]
     if len(dirs) == 0 :
         return None
     max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))

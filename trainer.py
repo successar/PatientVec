@@ -53,8 +53,8 @@ class Evaluator() :
         self.model.dirname = dirname
         self.metrics = metrics_map[_type]
         self.display_metrics = display_metrics
-
-    def evaluate(self, test_data, save_results=False) :
+        
+    def evaluate_single(self, name, test_data, save_results=False) :
         outputs = self.model.evaluate(test_data)
         outputs['predictions'] = np.array(outputs["predictions"])
 
@@ -65,10 +65,12 @@ class Evaluator() :
         test_data.outputs = outputs
 
         if save_results :
-            f = open(self.model.dirname + '/evaluate.json', 'w')
+            f = open(self.model.dirname + '/' + name + '_evaluate.json', 'w')
             json.dump(test_metrics, f)
             f.close()
 
         return outputs
 
-    
+    def evaluate(self, dev_data, test_data, save_results=False) :
+        self.evaluate_single('dev', dev_data, save_results=save_results)
+        self.evaluate_single('test', test_data, save_results=save_results)

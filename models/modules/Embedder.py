@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import os
 import numpy as np
 
 from allennlp.common import Registrable
@@ -22,11 +22,15 @@ class TokenEmbedder(Embedder) :
         }
         
         if embedding_file is not None :
-            pre_trained_embedding = np.load(embedding_file)
-            print("Setting Embedding")
-            weight = torch.Tensor(pre_trained_embedding)
-            weight[0, :].zero_()
-            self.embedding = nn.Embedding(vocab_size, embed_size, _weight=weight, padding_idx=0)
+            if os.path.exists(embedding_file) :
+                pre_trained_embedding = np.load(embedding_file)
+                print("Setting Embedding")
+                weight = torch.Tensor(pre_trained_embedding)
+                weight[0, :].zero_()
+                self.embedding = nn.Embedding(vocab_size, embed_size, _weight=weight, padding_idx=0)
+            else :
+                print("Error, Embedding file given but doesn't exists ...", embedding_file)
+                self.embedding = nn.Embedding(vocab_size, embed_size, padding_idx=0)
         else :
             self.embedding = nn.Embedding(vocab_size, embed_size, padding_idx=0)
             

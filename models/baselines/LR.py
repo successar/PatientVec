@@ -23,14 +23,14 @@ class Classifier :
         print("Fitting ... ", self.name)
         self.classifier.fit(X, y)
 
-    def evaluate(self, X, y, save_results) :
+    def evaluate(self, X, y, save_results, eval_name) :
         pred = normalise_output(np.array(self.classifier.predict_proba(X)))
         metrics = self.metrics(y, pred)
         print(self.name)
         print_metrics(metrics)
         if save_results :
             os.makedirs(self.dirname, exist_ok=True)
-            f = open(self.dirname + '/evaluate.json', 'w')
+            f = open(self.dirname + '/' + eval_name + '_evaluate.json', 'w')
             json.dump(metrics, f)
             f.close()
             
@@ -122,24 +122,24 @@ class LR :
             train_lda = np.concatenate([np.array(train_lda), train_data.structured_data], axis=-1)
             self.lda_l2_structured_classifier.fit(train_lda, train_data.y)
 
-    def evaluate_lda(self, data, save_results=False) :
+    def evaluate_lda(self, name, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
 
         train_bow = self.bowder.get_bow(docs)
         train_lda = self.lda.transform(train_bow)
 
-        self.lda_classifier.evaluate(train_lda, data.y, save_results)
+        self.lda_classifier.evaluate(train_lda, data.y, save_results, name)
         if self.has_structured :
             train_lda = np.concatenate([np.array(train_lda), data.structured_data], axis=-1)
-            self.lda_structured_classifier.evaluate(train_lda, data.y, save_results)
+            self.lda_structured_classifier.evaluate(train_lda, data.y, save_results, name)
 
         train_lda = self.lda.transform(train_bow)
         train_lda = self.bowder.normalise_bow(train_lda, use_norm='l2')
 
-        self.lda_l2_classifier.evaluate(train_lda, data.y, save_results)
+        self.lda_l2_classifier.evaluate(train_lda, data.y, save_results, name)
         if self.has_structured :
             train_lda = np.concatenate([np.array(train_lda), data.structured_data], axis=-1)
-            self.lda_l2_structured_classifier.evaluate(train_lda, data.y, save_results)
+            self.lda_l2_structured_classifier.evaluate(train_lda, data.y, save_results, name)
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]
@@ -182,28 +182,28 @@ class LR :
         if self.has_structured :
             self.structured_classifier.fit(train_data.structured_data, train_data.y)
 
-    def evaluate(self, data, save_results=False) :
+    def evaluate(self, name, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
 
         if 'count' in self.methods :
             train_bow = self.bowder.get_bow(docs)
             if not self.only_structured :
-                self.bow_classifier.evaluate(train_bow, data.y, save_results)
+                self.bow_classifier.evaluate(train_bow, data.y, save_results, name)
 
             if self.has_structured :
                 train_bow = np.concatenate([np.array(train_bow), data.structured_data], axis=-1)
-                self.bow_with_structured_classifier.evaluate(train_bow, data.y, save_results)
+                self.bow_with_structured_classifier.evaluate(train_bow, data.y, save_results, name)
 
             del train_bow
 
         if 'binary' in self.methods :
             train_bow = self.bowder.get_binary_bow(docs)
             if not self.only_structured :
-                self.binbow_classifier.evaluate(train_bow, data.y, save_results)
+                self.binbow_classifier.evaluate(train_bow, data.y, save_results, name)
 
             if self.has_structured :
                 train_bow = np.concatenate([np.array(train_bow), data.structured_data], axis=-1)
-                self.binbow_with_structured_classifier.evaluate(train_bow, data.y, save_results)
+                self.binbow_with_structured_classifier.evaluate(train_bow, data.y, save_results, name)
 
             del train_bow
 
@@ -212,16 +212,16 @@ class LR :
             train_tf = self.bowder.get_tfidf(docs)
 
             if not self.only_structured :
-                self.tf_idf_classifier.evaluate(train_tf, data.y, save_results)
+                self.tf_idf_classifier.evaluate(train_tf, data.y, save_results, name)
                 
             if self.has_structured :
                 train_tf = np.concatenate([np.array(train_tf), data.structured_data], axis=-1)
-                self.tf_idf_with_structured_classifier.evaluate(train_tf, data.y, save_results)
+                self.tf_idf_with_structured_classifier.evaluate(train_tf, data.y, save_results, name)
 
             del train_tf
 
         if self.has_structured :
-            self.structured_classifier.evaluate(data.structured_data, data.y, save_results)
+            self.structured_classifier.evaluate(data.structured_data, data.y, save_results, name)
             
     def predict(self, data) :
         docs = [[y for x in d for y in x] for d in data.X]
