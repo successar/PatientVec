@@ -10,6 +10,7 @@ parser.add_argument('--display', dest='display', action='store_true')
 parser.add_argument("--output_dir", type=str)
 parser.add_argument('--structured', dest='structured', action='store_true')
 parser.add_argument('--penalty', type=float, required=True)
+parser.add_argument('--type', type=str, required=True)
 
 args, extras = parser.parse_known_args()
 args.extras = extras
@@ -27,7 +28,7 @@ config = {'vocab' : data.vocab,
               'constant_mul' : 1.0, 
               'has_structured' : args.structured, 
               'lda' : False, 
-              'methods' : ['count'],
+              'methods' : [args.type],
               'only_structured' : args.structured,
               'basepath' : args.output_dir,
               'penalty' : args.penalty}
@@ -45,7 +46,7 @@ config = {'vocab' : data.vocab,
               'constant_mul' : 1.0, 
               'has_structured' : args.structured, 
               'lda' : False, 
-              'methods' : ['count'],
+              'methods' : [args.type],
               'only_structured' : args.structured,
               'basepath' : args.output_dir,
               'penalty' : args.penalty}

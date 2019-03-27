@@ -10,10 +10,10 @@ def pneumonia_dataset(args) :
     data.save_on_metric = 'roc_auc'
     data.metrics_type = 'classifier'
 
-    features = [x for x in data.dataframe.columns if x.startswith('feature')]
-    for f in features :
-        data.generate_encoded_field(f, 'trivial')
-    data.set_structured_params(regexs=[r'^feature'])
+#     features = [x for x in data.dataframe.columns if x.startswith('feature')]
+#     for f in features :
+#         data.generate_encoded_field(f, 'trivial')
+#     data.set_structured_params(regexs=[r'^feature'])
     
     data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']
     
@@ -27,10 +27,10 @@ def immunosuppressed_dataset(args) :
     data.save_on_metric = 'roc_auc'
     data.metrics_type = 'classifier'
 
-    features = [x for x in data.dataframe.columns if x.startswith('feature')]
-    for f in features :
-        data.generate_encoded_field(f, 'trivial')
-    data.set_structured_params(regexs=[r'^feature'])
+#     features = [x for x in data.dataframe.columns if x.startswith('feature')]
+#     for f in features :
+#         data.generate_encoded_field(f, 'trivial')
+#     data.set_structured_params(regexs=[r'^feature'])
     
     data.keys_to_use = ['accuracy', 'roc_auc', 'pr_auc']
     
