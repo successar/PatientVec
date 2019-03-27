@@ -16,6 +16,9 @@ For example, for Pneumonia dataset,
 
 `python preprocess/process_data.py --main_file [CSV file with pneumonia subset] --output_dir preprocess/Pneumonia --embedding_file [Path to Pubmed embeddings] --id_field [Name of ID field in main file] --text_field [Name of text field in main file] --label_field [Name of the field containing labels]`
 
+Experiments
+===========
+
 TO run experiments, you need to install
 
 `pip install allennlp`
@@ -24,4 +27,4 @@ TO run experiments, you need to install
 
 `pip install tensorflow`
 
-then, need to run `Pneumonia.ipynb` (`--data_dir` argument needs to correctly set to point to the preprocessed data, essentially the `--output_dir` argument used in the `process_data` command above for each of the 2 datasets.)
+then, need to run `Pneumonia.ipynb` (`--data_dir` argument needs to correctly set to point to the preprocessed data, essentially the same as `--output_dir` argument used in the `process_data` command above for each of the 2 datasets.)
