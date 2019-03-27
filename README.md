@@ -15,3 +15,13 @@ For the synth.csv file I run,
 For example, for Pneumonia dataset,
 
 `python preprocess/process_data.py --main_file [CSV file with pneumonia subset] --output_dir preprocess/Pneumonia --embedding_file [Path to Pubmed embeddings] --id_field [Name of ID field in main file] --text_field [Name of text field in main file] --label_field [Name of the field containing labels]`
+
+TO run experiments, you need to install
+
+`pip install allennlp`
+
+`pip install sru[cuda]`
+
+`pip install tensorflow`
+
+then, need to run `Pneumonia.ipynb` (`--data_dir` argument needs to correctly set to point to the preprocessed data, essentially the `--output_dir` argument used in the `process_data` command above for each of the 2 datasets.)
