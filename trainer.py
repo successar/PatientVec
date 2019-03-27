@@ -14,7 +14,7 @@ class Trainer() :
         self.model.load_filtered_model(dirname)
     
     def train(self, train_data, test_data, n_iters=15, save_on_metric='roc_auc') :
-        best_metric = 0.0
+        best_metric = -1.0
         last_few_metrics = deque(maxlen=3)
         for _ in tqdm_notebook(range(n_iters)) :
             self.model.train(train_data)
