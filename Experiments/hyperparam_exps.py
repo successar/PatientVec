@@ -8,12 +8,12 @@ from PatientVec.common import *
 def get_basic_data(data, truncate=90, structured=True, encodings=None) :
     train_data = data.filter_data_length(data.get_data('train', structured=structured, encodings=encodings), truncate=truncate)
     dev_data = data.filter_data_length(data.get_data('dev', structured=structured, encodings=encodings), truncate=truncate)
-
-    return train_data, dev_data
+    test_data = data.filter_data_length(data.get_data('test', structured=structured, encodings=encodings), truncate=truncate)
+    return train_data, dev_data, test_data
 
 def basic_experiments(data, configs, args) :
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
 
     for e in configs :
         config = e(data, structured=structured, args=args)
@@ -29,7 +29,7 @@ def basic_experiments(data, configs, args) :
         trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
 
         evaluator = Evaluator(BasicCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-        _ = evaluator.evaluate(dev_data, save_results=True)
+        _ = evaluator.evaluate(test_data, save_results=True)
         print('='*300)
         
 def structured_attention_experiments(data, configs, args) :
@@ -107,7 +107,7 @@ def diagnosis_pretrained_experiments(data, args) :
             
 def hierarchical_experiments(data, args) :
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     
     for e in hierarchical_configs :
         config = e(data, structured=structured, args=args)
@@ -124,7 +124,7 @@ def hierarchical_experiments(data, args) :
         trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
 
         evaluator = Evaluator(HierCT, trainer.model.dirname, _type=data.metrics_type, display_metrics=args.display)
-        _ = evaluator.evaluate(dev_data, save_results=True)
+        _ = evaluator.evaluate(test_data, save_results=True)
         print('='*300)
         
         
@@ -154,7 +154,7 @@ from PatientVec.models.baselines.LR import LR
 
 def lr_experiments(data, args) :
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     for norm in [None, 'l1', 'l2'] :
         config = {'vocab' : data.vocab, 
                   'stop_words' : True, 
@@ -171,11 +171,11 @@ def lr_experiments(data, args) :
         print(config)
         print(lr.has_structured)
         lr.train(train_data)
-        lr.evaluate(dev_data, save_results=True)
+        lr.evaluate(test_data, save_results=True)
         
 def lda_experiments(data, args) :
     structured = vars(args).get('structured', True)
-    train_data, dev_data = get_basic_data(data, structured=structured, truncate=90)
+    train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     config = {'vocab' : data.vocab, 
                   'stop_words' : True, 
                   'exp_name' : data.name, 
@@ -191,7 +191,7 @@ def lda_experiments(data, args) :
     print(config)
     print(lr.has_structured)
     lr.train_lda(train_data)
-    lr.evaluate_lda(dev_data, save_results=True)
+    lr.evaluate_lda(test_data, save_results=True)
 
 experiment_types = {
     'vanilla' : lambda data, args : basic_experiments(data, vanilla_configs, args),
