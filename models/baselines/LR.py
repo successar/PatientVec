@@ -48,11 +48,19 @@ class LR :
         self.only_structured = config.get('only_structured', False)
         self.basepath = config.get('basepath', 'outputs')
         self.penalty = config.get('penalty', 1.0)
+        self.vary_scaling = config.get('vary_scaling', False)
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
         
         basename = 'baselines'
+        if self.vary_scaling :
+            print("Varying scaling by", self.constant_mul)
+            if self.penalty != 1.0 :
+                assert False, "Penalty and scaling set simulataneously"
+            else :
+                basename = 'baselines_M=' + str(self.constant_mul)
+                
         if self.penalty != 1.0 :
             basename = 'baselines_' + str(self.penalty)
             

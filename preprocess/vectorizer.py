@@ -123,11 +123,11 @@ class BoWder :
                     norm_l = dense_norm(bow, int(use_norm[1]), axis=1)
                 norm_l = np.where(norm_l == 0, 1.0, norm_l)
                 bow = bow / norm_l[:, None]
-                print("Multiplying by constant , ", self.constant_mul)
-                bow = bow * self.constant_mul
             else :
                 bow = normalize(bow, norm=use_norm, copy=False)
 
+        print("Multiplying by constant , ", self.constant_mul)
+        bow = bow * self.constant_mul
         return bow
 
 class DataHolder() :
