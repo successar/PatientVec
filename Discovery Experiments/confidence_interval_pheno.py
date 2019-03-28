@@ -1,6 +1,7 @@
 import os
 import PatientVec.dataloaders as dataloaders
 from PatientVec.Experiments.hyperparam_exps import *
+import time
 
 import argparse
 parser = argparse.ArgumentParser(description='Run confidence experiments on a dataset')
@@ -27,6 +28,7 @@ for _ in range(10) :
 
 train_data, dev_data, test_data = get_basic_data(data, structured=args.structured, truncate=90)
 for i in range(10) :
+    time.sleep(5)
     config = {'vocab' : data.vocab, 
               'stop_words' : True, 
               'exp_name' : data.name, 
