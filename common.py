@@ -135,6 +135,11 @@ def get_all_model(dirname) :
     dirs = [os.path.join(dirname, d) for d in dirs]
     return dirs
 
+def get_all_model_with_test(dirname) :
+    dirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d)) and 'test_evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    dirs = [os.path.join(dirname, d) for d in dirs]
+    return dirs
+
 from PatientVec.metrics import print_metrics
 def print_results_from_model(dirname) :
     assert 'evaluate.json' in os.listdir(dirname)

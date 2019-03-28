@@ -23,7 +23,7 @@ def basic_experiments(data, configs, args) :
             config['exp_config']['basepath'] = args.output_dir
         if hasattr(args, 'modify_config') :
             config = args.modify_config(config)
-        config['training_config']['common']['bsize'] = 16
+        # config['training_config']['common']['bsize'] = 16
         print(config)
 
         trainer = Trainer(BasicCT, config, _type=data.metrics_type, display_metrics=args.display)
@@ -31,14 +31,19 @@ def basic_experiments(data, configs, args) :
         if not do_test :
             n_iters = vars(args).get('n_iters', 10)
             trainer.train(train_data, dev_data, n_iters=n_iters, save_on_metric=data.save_on_metric)
-            dirname = trainer.model.dirname
+            dirname = [trainer.model.dirname]
         else :
-            dirname = get_latest_model(os.path.dirname(trainer.model.dirname))
+            if do_all :
+                dirname = get_all_model(os.path.dirname(trainer.model.dirname))
+            else :
+                dirname = [get_latest_model(os.path.dirname(trainer.model.dirname))]
 
-        if do_test and has_test_results(dirname): continue
+        print(len(dirname))
+        for d in dirname[:10] :
+            if do_test and has_test_results(d): continue
 
-        evaluator = Evaluator(BasicCT, dirname, _type=data.metrics_type, display_metrics=args.display)
-        evaluator.evaluate(dev_data, test_data, save_results=True)
+            evaluator = Evaluator(BasicCT, d, _type=data.metrics_type, display_metrics=args.display)
+            evaluator.evaluate(dev_data, test_data, save_results=True)
         print('='*300)
         
 def structured_attention_experiments(data, configs, args) :
@@ -175,6 +180,7 @@ from PatientVec.models.baselines.LR import LR
 
 def lr_experiments(data, args) :
     structured = vars(args).get('structured', True)
+    structured = structured & (data.structured_dim > 0)
     train_data, dev_data, test_data = get_basic_data(data, structured=structured, truncate=90)
     for norm in [None, 'l1', 'l2'] :
         config = {'vocab' : data.vocab, 
@@ -192,7 +198,8 @@ def lr_experiments(data, args) :
         print(config)
         print(lr.has_structured)
         lr.train(train_data)
-        lr.evaluate(dev_data, save_results=True)
+        lr.evaluate(name='dev', data=dev_data, save_results=True)
+        lr.evaluate(name='test', data=test_data, save_results=True)
         
 def lda_experiments(data, args) :
     structured = vars(args).get('structured', True)
@@ -212,7 +219,8 @@ def lda_experiments(data, args) :
     print(config)
     print(lr.has_structured)
     lr.train_lda(train_data)
-    lr.evaluate_lda(dev_data, save_results=True)
+    lr.evaluate_lda(name='dev', data=dev_data, save_results=True)
+    lr.evaluate_lda(name='test', data=test_data, save_results=True)
 
 experiment_types = {
     'vanilla' : lambda data, args : basic_experiments(data, vanilla_configs, args),
