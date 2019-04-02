@@ -49,11 +49,11 @@ class LR :
 #         self.tf_idf_classifier.fit(train_tf, train_data.y)
 #         print("Fit TFIDF Classifier ...")
 
-        train_bow = np.concatenate([np.array(train_bow), train_data.structured_data], axis=-1)
+#         train_bow = np.concatenate([np.array(train_bow), train_data.structured_data], axis=-1)
         # train_tf = np.concatenate([train_tf.todense(), train_data.structured_data], axis=-1)
 
-        self.bow_with_structured_classifier.fit(train_bow, train_data.y)
-        print("Fit BOW Structured Classifier ...")
+#         self.bow_with_structured_classifier.fit(train_bow, train_data.y)
+#         print("Fit BOW Structured Classifier ...")
         # self.tf_idf_with_structured_classifier.fit(train_tf, train_data.y)
         # print("Fit TFIDF Structured Classifier ...")
         
@@ -78,10 +78,10 @@ class LR :
         metrics = self.evaluate_classifier('BOW', self.bow_classifier, bow, data.y, self.bow_dirname, save_results)
 #         self.evaluate_classifier('TFIDF', self.tf_idf_classifier, tf, data.y, self.tf_dirname, save_results)
         
-        bow = np.concatenate([np.array(bow), data.structured_data], axis=-1)
+#         bow = np.concatenate([np.array(bow), data.structured_data], axis=-1)
         # tf = np.concatenate([tf.todense(), data.structured_data], axis=-1)
         
-        self.evaluate_classifier('BOW+Structured', self.bow_with_structured_classifier, bow, data.y, self.bow_structured_dirname, save_results)
+#         self.evaluate_classifier('BOW+Structured', self.bow_with_structured_classifier, bow, data.y, self.bow_structured_dirname, save_results)
         # self.evaluate_classifier('TFIDF+Structured', self.tf_idf_with_structured_classifier, tf, data.y, self.tf_structured_dirname, save_results)
         
         return metrics
