@@ -18,6 +18,8 @@ class ClassificationTrainer(Trainer) :
 
     def generate_optimizer(self) :
         self.class_weight = self.training_config['common'].get("class_weight", False)
+        self.balanced = self.training_config['common'].get('balanced', False)
+        assert not (self.class_weight & self.balanced), "Both class weight and balanced set ..."
         super().generate_optimizer()
         
     def train(self, train_data) :

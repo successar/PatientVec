@@ -1,9 +1,10 @@
 from PatientVec.preprocess.vectorizer import BoWder
-from sklearn.linear_model import LogisticRegression, SGDClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.decomposition import LatentDirichletAllocation
 
 from sklearn.multioutput import MultiOutputClassifier
 from PatientVec.metrics import *
-import time, json
+import time, json, pickle
 import os
 
 def normalise_output(y) :
@@ -11,93 +12,237 @@ def normalise_output(y) :
         return y[0]
     return y[:, :, 1].T
 
+class Classifier :
+    def __init__(self, lr_model, name, dirname) :
+        self.name = name
+        self.dirname = dirname
+        self.classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1', C=lr_model.penalty), n_jobs=8)
+        self.metrics = lr_model.metrics
+
+    def fit(self, X, y) :
+        print("Fitting ... ", self.name)
+        self.classifier.fit(X, y)
+
+    def evaluate(self, X, y, save_results, eval_name) :
+        pred = normalise_output(np.array(self.classifier.predict_proba(X)))
+        metrics = self.metrics(y, pred)
+        print(self.name)
+        print_metrics(metrics)
+        if save_results :
+            os.makedirs(self.dirname, exist_ok=True)
+            f = open(self.dirname + '/' + eval_name + '_evaluate.json', 'w')
+            json.dump(metrics, f)
+            f.close()
+            
+        self.test_metrics = metrics
+    
+
 class LR :
     def __init__(self, config) :
         vocab = config['vocab']
         stop_words = config.get('stop_words', False)
         self.metrics = metrics_map[config['type']]
         self.norm = config.get('norm', None)
-        self.clip = config.get('clip', False)
         self.constant_mul = config.get('constant_mul', 1.0)
+        self.has_structured = config.get('has_structured', True)
+        self.only_structured = config.get('only_structured', False)
+        self.basepath = config.get('basepath', 'outputs')
+        self.penalty = config.get('penalty', 1.0)
+        self.vary_scaling = config.get('vary_scaling', False)
 
         self.time_str = time.ctime().replace(' ', '_')
         self.exp_name = config['exp_name']
-
-        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm, clip=self.clip, constant_mul=self.constant_mul)
         
-        gen_classifier = lambda : MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=8)
-        self.bow_classifier = gen_classifier()
-        self.tf_idf_classifier = gen_classifier()
-        self.bow_with_structured_classifier = gen_classifier()
-        self.tf_idf_with_structured_classifier = gen_classifier()
+        basename = 'baselines'
+        if self.vary_scaling :
+            print("Varying scaling by", self.constant_mul)
+            if self.penalty != 1.0 :
+                assert False, "Penalty and scaling set simulataneously"
+            else :
+                basename = 'baselines_M=' + str(self.constant_mul)
+                
+        if self.penalty != 1.0 :
+            basename = 'baselines_' + str(self.penalty)
+            
+        self.gen_dirname = lambda x : os.path.join(self.basepath, self.exp_name, basename, x, self.time_str)
+        if config.get('lda', False) :
+            print("Setting up LDA ...")
+            self.init_lda(config)
+            return
+        
+        self.methods = config.get('methods', ['count', 'binary', 'tfidf'])
+        print("Not running LDA, Yay !")
+        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=self.norm, constant_mul=self.constant_mul)
+        bow_dirname = self.gen_dirname('LR+BOW+norm='+str(self.norm))
+        tf_dirname = self.gen_dirname('LR+TFIDF+norm='+str(self.norm))
+        binbow_dirname = self.gen_dirname('LR+BinaryBOW+norm='+str(self.norm))
+        bow_structured_dirname = self.gen_dirname('LR+BOW+norm=' + str(self.norm) + '+Structured')
+        binbow_structured_dirname = self.gen_dirname('LR+BinaryBOW+norm=' + str(self.norm) + '+Structured')
+        tf_structured_dirname = self.gen_dirname('LR+TFIDF+norm=' + str(self.norm) + '+Structured')
+        structured_dirname = self.gen_dirname('LR+Structured')
+        
+        self.bow_classifier = Classifier(self, 'BOW', bow_dirname)
+        self.tf_idf_classifier = Classifier(self, 'TFIDF', tf_dirname)
+        self.binbow_classifier = Classifier(self, 'BinBOW', binbow_dirname)
+        self.bow_with_structured_classifier = Classifier(self, 'BOW+Structured', bow_structured_dirname)
+        self.binbow_with_structured_classifier = Classifier(self, 'BinBOW+Structured', binbow_structured_dirname)
+        self.tf_idf_with_structured_classifier = Classifier(self, 'TFIDF+Structured', tf_structured_dirname)
+        self.structured_classifier = Classifier(self, 'Structured', structured_dirname)
 
-        gen_dirname = lambda x : os.path.join('outputs/', self.exp_name, 'baselines', x, self.time_str)
-        self.bow_dirname = gen_dirname('LR+BOW+norm='+str(self.norm)+'+clip='+str(self.clip))
-        self.tf_dirname = gen_dirname('LR+TFIDF+norm='+str(self.norm)+'+clip='+str(self.clip))
-        self.bow_structured_dirname = gen_dirname('LR+BOW+norm=' + str(self.norm) + '+clip=' + str(self.clip) + '+Structured')
-        self.tf_structured_dirname = gen_dirname('LR+TFIDF+norm=' + str(self.norm) + '+clip=' + str(self.clip) + '+Structured')
+    def init_lda(self, config) :
+        vocab = config['vocab']
+        stop_words = config.get('stop_words', False)
+        self.bowder = BoWder(vocab=vocab, stop_words=stop_words, norm=None, constant_mul=self.constant_mul)
+        lda_dirname = self.gen_dirname('LR+LDA+norm=None')
+        lda_l2_dirname = self.gen_dirname('LR+LDA+norm=l2')
+        lda_structured_dirname = self.gen_dirname('LR+LDA+norm=None+Structured')
+        lda_l2_structured_dirname = self.gen_dirname('LR+LDA+norm=l2+Structured')
+
+        self.lda_classifier = Classifier(self, 'LDA', lda_dirname)
+        self.lda_l2_classifier = Classifier(self, 'LDA+l2', lda_l2_dirname)
+        self.lda_structured_classifier = Classifier(self, 'LDA+Structured', lda_structured_dirname)
+        self.lda_l2_structured_classifier = Classifier(self, 'LDA+l2+Structured', lda_l2_structured_dirname)
+
+        self.lda_file = os.path.join(os.path.dirname(lda_dirname), 'lda_object.p')
+        os.makedirs(os.path.dirname(self.lda_file), exist_ok=True)
+        print(self.lda_file)
+
+    def train_lda(self, train_data) :
+        docs = [[y for x in d for y in x] for d in train_data.X]
+        
+        train_bow = self.bowder.get_bow(docs)
+        self.lda = LatentDirichletAllocation(n_components=50, learning_method='online', verbose=1)
+        self.lda.fit(train_bow)
+        pickle.dump(self.lda, open(self.lda_file, 'wb'))
+
+        train_lda = self.lda.transform(train_bow)
+
+        self.lda_classifier.fit(train_lda, train_data.y)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), train_data.structured_data], axis=-1)
+            self.lda_structured_classifier.fit(train_lda, train_data.y)
+
+        train_lda = self.lda.transform(train_bow)
+        train_lda = self.bowder.normalise_bow(train_lda, use_norm='l2')
+
+        self.lda_l2_classifier.fit(train_lda, train_data.y)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), train_data.structured_data], axis=-1)
+            self.lda_l2_structured_classifier.fit(train_lda, train_data.y)
+
+    def evaluate_lda(self, name, data, save_results=False) :
+        docs = [[y for x in d for y in x] for d in data.X]
+
+        train_bow = self.bowder.get_bow(docs)
+        train_lda = self.lda.transform(train_bow)
+
+        self.lda_classifier.evaluate(train_lda, data.y, save_results, name)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), data.structured_data], axis=-1)
+            self.lda_structured_classifier.evaluate(train_lda, data.y, save_results, name)
+
+        train_lda = self.lda.transform(train_bow)
+        train_lda = self.bowder.normalise_bow(train_lda, use_norm='l2')
+
+        self.lda_l2_classifier.evaluate(train_lda, data.y, save_results, name)
+        if self.has_structured :
+            train_lda = np.concatenate([np.array(train_lda), data.structured_data], axis=-1)
+            self.lda_l2_structured_classifier.evaluate(train_lda, data.y, save_results, name)
 
     def train(self, train_data) :
         docs = [[y for x in d for y in x] for d in train_data.X]
-#         self.bowder.fit_tfidf(docs)
-        train_bow = self.bowder.get_bow(docs)
-#         breakpoint()
-#         train_tf = self.bowder.get_tfidf(docs)
-
-        self.bow_classifier.fit(train_bow, train_data.y)
-        print("Fit BOW Classifier ...")
-#         self.tf_idf_classifier.fit(train_tf, train_data.y)
-#         print("Fit TFIDF Classifier ...")
-
-#         train_bow = np.concatenate([np.array(train_bow), train_data.structured_data], axis=-1)
-        # train_tf = np.concatenate([train_tf.todense(), train_data.structured_data], axis=-1)
-
-#         self.bow_with_structured_classifier.fit(train_bow, train_data.y)
-#         print("Fit BOW Structured Classifier ...")
-        # self.tf_idf_with_structured_classifier.fit(train_tf, train_data.y)
-        # print("Fit TFIDF Structured Classifier ...")
         
-    def evaluate_classifier(self, name, classifier, X, y, dirname, save_results) :
-        pred = normalise_output(np.array(classifier.predict_proba(X)))
-        metrics = self.metrics(y, pred)
-        print(name)
-        print_metrics(metrics)
-        if save_results :
-            os.makedirs(dirname, exist_ok=True)
-            f = open(dirname + '/evaluate.json', 'w')
-            json.dump(metrics, f)
-            f.close()
+        if 'count' in self.methods :
+            train_bow = self.bowder.get_bow(docs)
+            if not self.only_structured :
+                self.bow_classifier.fit(train_bow, train_data.y)
+
+            if self.has_structured :
+                train_bow = np.concatenate([np.array(train_bow), train_data.structured_data], axis=-1)
+                self.bow_with_structured_classifier.fit(train_bow, train_data.y)
+
+            del train_bow
+
+        if 'binary' in self.methods :
+            train_bow = self.bowder.get_binary_bow(docs)
+            if not self.only_structured :
+                self.binbow_classifier.fit(train_bow, train_data.y)
+
+            if self.has_structured :
+                train_bow = np.concatenate([np.array(train_bow), train_data.structured_data], axis=-1)
+                self.binbow_with_structured_classifier.fit(train_bow, train_data.y)
+
+            del train_bow
             
-        return metrics
+        if 'tfidf' in self.methods :
+            self.bowder.fit_tfidf(docs)
+            train_tf = self.bowder.get_tfidf(docs)
 
-    def evaluate(self, data, save_results=False) :
+            if not self.only_structured :
+                self.tf_idf_classifier.fit(train_tf, train_data.y)
+                
+            if self.has_structured :
+                train_tf = np.concatenate([np.array(train_tf), train_data.structured_data], axis=-1)
+                self.tf_idf_with_structured_classifier.fit(train_tf, train_data.y)
+
+            del train_tf
+
+        if self.has_structured :
+            self.structured_classifier.fit(train_data.structured_data, train_data.y)
+
+    def evaluate(self, name, data, save_results=False) :
         docs = [[y for x in d for y in x] for d in data.X]
-        bow = self.bowder.get_bow(docs)
-#         tf = self.bowder.get_tfidf(docs)
 
-        metrics = self.evaluate_classifier('BOW', self.bow_classifier, bow, data.y, self.bow_dirname, save_results)
-#         self.evaluate_classifier('TFIDF', self.tf_idf_classifier, tf, data.y, self.tf_dirname, save_results)
-        
-#         bow = np.concatenate([np.array(bow), data.structured_data], axis=-1)
-        # tf = np.concatenate([tf.todense(), data.structured_data], axis=-1)
-        
-#         self.evaluate_classifier('BOW+Structured', self.bow_with_structured_classifier, bow, data.y, self.bow_structured_dirname, save_results)
-        # self.evaluate_classifier('TFIDF+Structured', self.tf_idf_with_structured_classifier, tf, data.y, self.tf_structured_dirname, save_results)
-        
-        return metrics
-    
+        if 'count' in self.methods :
+            train_bow = self.bowder.get_bow(docs)
+            if not self.only_structured :
+                self.bow_classifier.evaluate(train_bow, data.y, save_results, name)
+
+            if self.has_structured :
+                train_bow = np.concatenate([np.array(train_bow), data.structured_data], axis=-1)
+                self.bow_with_structured_classifier.evaluate(train_bow, data.y, save_results, name)
+
+            del train_bow
+
+        if 'binary' in self.methods :
+            train_bow = self.bowder.get_binary_bow(docs)
+            if not self.only_structured :
+                self.binbow_classifier.evaluate(train_bow, data.y, save_results, name)
+
+            if self.has_structured :
+                train_bow = np.concatenate([np.array(train_bow), data.structured_data], axis=-1)
+                self.binbow_with_structured_classifier.evaluate(train_bow, data.y, save_results, name)
+
+            del train_bow
+
+        if 'tfidf' in self.methods :
+            self.bowder.fit_tfidf(docs)
+            train_tf = self.bowder.get_tfidf(docs)
+
+            if not self.only_structured :
+                self.tf_idf_classifier.evaluate(train_tf, data.y, save_results, name)
+                
+            if self.has_structured :
+                train_tf = np.concatenate([np.array(train_tf), data.structured_data], axis=-1)
+                self.tf_idf_with_structured_classifier.evaluate(train_tf, data.y, save_results, name)
+
+            del train_tf
+
+        if self.has_structured :
+            self.structured_classifier.evaluate(data.structured_data, data.y, save_results, name)
+            
     def predict(self, data) :
         docs = [[y for x in d for y in x] for d in data.X]
         bow = self.bowder.get_bow(docs)
-        pred = normalise_output(np.array(self.bow_classifier.predict_proba(bow)))
+        pred = normalise_output(np.array(self.bow_classifier.classifier.predict_proba(bow)))
         return pred
 
     def get_features(self, classifier, estimator=0, n=100) :
         return [self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in 
-                    np.argsort(classifier.estimators_[estimator].coef_[0][:len(self.bowder.words_to_keep)])[-n:]]
+                    np.argsort(classifier.classifier.estimators_[estimator].coef_[0][:len(self.bowder.words_to_keep)])[-n:]]
 
     def print_all_features(self, n=20) :
-        for i in range(len(self.bow_classifier.estimators_)) :
+        for i in range(len(self.bow_classifier.classifier.estimators_)) :
             print(" ".join(self.get_features(self.bow_classifier, estimator=i, n=n)))
             print('-'*10)
             print(" ".join(self.get_features(self.tf_idf_classifier, estimator=i, n=n)))
@@ -108,75 +253,3 @@ class LR :
             print('-'*10)
 
             print('='*25)
-
-
-from sklearn.decomposition import LatentDirichletAllocation
-
-class LDA :
-    def __init__(self, config) :
-        vocab = config['vocab']
-        stop_words = config.get('stop_words', False)
-        self.metrics = metrics_map[config['type']]
-
-        self.time_str = time.ctime().replace(' ', '_')
-        self.exp_name = config['exp_name']
-
-        self.bowder = BoWder(vocab=vocab, stop_words=stop_words)
-        self.lda = LatentDirichletAllocation(n_components=50, learning_method='online', verbose=1)
-
-        self.lda_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
-        self.lda_with_structured_classifier = MultiOutputClassifier(LogisticRegression(class_weight='balanced', penalty='l1'), n_jobs=4)
-        
-        self.dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+LDA', self.time_str)
-        self.structured_dirname = os.path.join('outputs/', self.exp_name, 'baselines', 'LR+LDA+Structured', self.time_str)
-
-    def train(self, train_data) :
-        docs = [[y for x in d for y in x] for d in train_data.X]
-        train_bow = self.bowder.get_bow(docs)
-        self.lda.fit(train_bow)
-
-        train_lda = self.lda.transform(train_bow)
-        self.lda_classifier.fit(train_lda, train_data.y)
-
-        train_lda = np.concatenate([train_lda, train_data.structured_data], axis=-1)
-        self.lda_with_structured_classifier.fit(train_lda, train_data.y)
-
-    def evaluate(self, data, save_results=False) :
-        docs = [[y for x in d for y in x] for d in data.X]
-        dev_bow = self.bowder.get_bow(docs)
-        dev_lda = self.lda.transform(dev_bow)
-
-        pred_lda = normalise_output(np.array(self.lda_classifier.predict_proba(dev_lda)))
-
-        dev_lda = np.concatenate([dev_lda, data.structured_data], axis=-1)
-        pred_lda_structured = normalise_output(np.array(self.lda_with_structured_classifier.predict_proba(dev_lda)))
-
-        metrics = self.metrics(data.y, pred_lda)
-        metrics_structured = self.metrics(data.y, pred_lda_structured)
-        print("LDA")
-        print_metrics(metrics)
-        print("LDA_Structured")
-        print_metrics(metrics_structured)
-
-        if save_results :
-            os.makedirs(self.dirname, exist_ok=True)
-            f = open(self.dirname + '/evaluate.json', 'w')
-            json.dump(metrics, f)
-            f.close()
-
-            os.makedirs(self.structured_dirname, exist_ok=True)
-            f = open(self.structured_dirname + '/evaluate.json', 'w')
-            json.dump(metrics_structured, f)
-            f.close()
-
-    def get_topics(self, n=20) :
-        importance_scores = self.lda.components_ / self.lda.components_.sum(axis=1)[:, np.newaxis]
-        topic_best = {}
-        for i in range(50) :
-            topic_dist = importance_scores[i]
-            topic_best[i] = " ".join([self.bowder.vocab.idx2word[self.bowder.map_bow_to_vocab[x]] for x in np.argsort(topic_dist)[-n:]])
-
-        
-        return topic_best
-
-

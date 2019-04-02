@@ -55,12 +55,11 @@ class Vector_Generator() :
 class Hierarchical_Generator() :
     def __init__(self, train_data, batch_size, sort_and_shuffle=True, balanced=False) :
         docs = train_data.X
-
         self.valid_idxs = list(range(len(docs)))
 
         if sort_and_shuffle :
             max_sentence_length = [max([len(x) for x in y]) for y in docs]
-            sorting_idx = get_sorting_index_with_noise_from_lengths(max_sentence_length, noise_frac=0.1)
+            sorting_idx = get_sorting_index_with_noise_from_lengths(max_sentence_length, noise_frac=0.0)
             self.valid_idxs = [self.valid_idxs[i] for i in sorting_idx]
 
         self.N = len(self.valid_idxs)
@@ -68,6 +67,7 @@ class Hierarchical_Generator() :
         self.batch_size = batch_size
 
         if sort_and_shuffle and balanced :
+            print("balancing")
             assert len(np.unique(np.array(train_data.y)[:, 0])) <= 2, "Data is not binary"
             self.valid_idxs_0 = [i for i in self.valid_idxs if train_data.y[i][0] == 0]
             self.valid_idxs_1 = [i for i in self.valid_idxs if train_data.y[i][0] == 1]

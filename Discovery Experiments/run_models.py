@@ -9,6 +9,8 @@ parser.add_argument('--exp_types', nargs='+', required=True)
 parser.add_argument('--structured', dest='structured', action='store_true')
 parser.add_argument('--display', dest='display', action='store_true')
 parser.add_argument("--output_dir", type=str)
+parser.add_argument("--bsize", type=int, default=16)
+parser.add_argument('--do_test', dest='do_test', action='store_true')
 
 args, extras = parser.parse_known_args()
 args.extras = extras

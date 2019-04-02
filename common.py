@@ -40,7 +40,8 @@ def plot_entropy(X, attn) :
 
     plt.scatter(unif_H, attn_H, s=1)
 
-def print_attn(sentence, attention, idx=None, latex=False) :
+def print_attn(sentence, attention, highlight_idx=None, latex=False) :
+    #Sentences is the list of words, #attention is list of attention weight for that sentence in order
     l = []
     latex_str = []
     for i, (w, a) in enumerate(zip(sentence, attention)) :
@@ -49,7 +50,7 @@ def print_attn(sentence, attention, idx=None, latex=False) :
         w = re.sub('>', '&gt;', w)
         
         add_string = ''
-        if idx is not None and i == idx :
+        if highlight_idx is not None and i in highlight_idx :
             add_string = "border-style : solid;"
         
         v = "{:.2f}".format((1-a) * -0.5 + 0.5)
@@ -111,17 +112,26 @@ def push_graphs_to_main_directory(model, name) :
 import time
 from collections import defaultdict
 
+def has_test_results(dirname) :
+    files = os.listdir(dirname)
+    return 'test_evaluate.json' in files
+
 def get_latest_model(dirname) :
-    dirs = [d for d in os.listdir(dirname) if 'evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    dirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d)) and 'test_evaluate.json' in os.listdir(os.path.join(dirname, d))]
     if len(dirs) == 0 :
         return None
     max_dir = max(dirs, key=lambda s : time.strptime(s.replace('_', ' ')))
     return os.path.join(dirname, max_dir)
 
-from metrics import print_metrics
+def get_all_model(dirname) :
+    dirs = [d for d in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, d)) and 'test_evaluate.json' in os.listdir(os.path.join(dirname, d))]
+    dirs = [os.path.join(dirname, d) for d in dirs]
+    return dirs
+
+from PatientVec.metrics import print_metrics
 def print_results_from_model(dirname) :
-    assert 'evaluate.json' in os.listdir(dirname)
-    metrics = json.load(open(os.path.join(dirname, 'evaluate.json')))
+    assert 'dev_evaluate.json' in os.listdir(dirname)
+    metrics = json.load(open(os.path.join(dirname, 'dev_evaluate.json')))
     print_metrics(metrics)
     
 def clean_latest_model(dirname) :
@@ -135,61 +145,3 @@ def clean_latest_model(dirname) :
         shutil.rmtree(os.path.join(dirname, d))
         
     print(os.listdir(dirname))
-    
-
-def push_latest_model(dirname, model_name) :
-    exps = defaultdict(list)
-    for (path, dirs, files) in os.walk(dirname) :
-        if 'evaluate.json' in files :
-            exps[os.path.dirname(path)].append((os.path.basename(path), dirs, files))
-
-    for e in exps :
-        last_e = max(exps[e], key=lambda s : time.strptime(s[0].replace('_', ' ')))
-        evaluate = json.load(open(e + '/' + last_e[0] + '/evaluate.json'))
-        evaluate = {'model_name' : model_name, 'time_str' : last_e[0], 'path' : e + '/' + last_e[0], 'results' : evaluate}
-        filename = 'latex_evals/' + model_name + '.evaluate.json'
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
-        json.dump(evaluate, open(filename, 'w'))
-
-def generate_latex_tables(data, keys_to_use) :
-    for e in (basic_configs + hierarchical_configs):
-        for use_structured in [True, False] :
-            config = e(data, structured=use_structured)
-            filename = config['exp_config']['exp_name']
-            filename = os.path.join('outputs/', filename)
-            push_latest_model(filename, config['exp_config']['exp_name'])
-        
-    for e in (structured_configs) :
-        for use_structured in [True, False] :
-            config = e(data, structured=use_structured, encodings=data.structured_columns)
-            filename = config['exp_config']['exp_name']
-            filename = os.path.join('outputs/', filename)
-            push_latest_model(filename, config['exp_config']['exp_name'])
-            
-        
-    for e in os.listdir('outputs/' + data.name + '/baselines/') :
-        filename = os.path.join('outputs/' + data.name + '/baselines/', e)
-        push_latest_model(filename, os.path.join(data.name + '/baselines/', e))
-
-    dataset = data.name
-    dataset_path = os.path.join('latex_evals', dataset)
-    output_path = os.path.join('Text-encoding-EHR/results/', dataset)
-    os.makedirs(output_path, exist_ok=True)
-
-    dirs = os.listdir(dataset_path)
-
-    for d in dirs :
-        subpath = os.path.join(dataset_path, d)
-        output_file = os.path.join(output_path, d + '.csv')
-        dfs = []
-        for f in sorted(os.listdir(subpath)) :
-            if os.path.isfile(os.path.join(subpath, f)) :
-                d = json.load(open(os.path.join(subpath, f)))
-                results = {k:d['results'][k] for k in keys_to_use}
-                results['Method'] = f[:-14].replace('+', ' +').replace('_', ':')
-                dfs.append(pd.DataFrame([results]))
-            else :
-                logging.error("%s not a file", f)
-        
-        dfs = pd.concat(dfs)
-        dfs.to_csv(output_file, columns=['Method'] + keys_to_use, index=False)

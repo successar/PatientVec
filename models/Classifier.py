@@ -11,6 +11,7 @@ from .Model import Model
 
 from .modules.SelfAttention import SelfAttention
 from .modules.Attention import Attention
+from .modules.DimAttention import DimAttention
 
 from .utils import Holder, HierHolder
 from typing import Dict
@@ -135,9 +136,13 @@ class SequenceClassifierWithAttention(nn.Module, from_params.FromParams) :
         
         embedding = self.embedding(seq) #(B, L, E)
         h, hseq = self.encoder(embedding, lengths) #(B, H), #(B, L, H)
+
+        # import pdb; pdb.set_trace()
         
         attn = self.attention(hseq, data.masks) #(B, L)
         mix = torch.bmm(attn.unsqueeze(1), hseq).squeeze(1)
+
+        # pdb.set_trace()
 
         if self.structured['use_structured'] :
             conditional = torch.Tensor(batch.structured_data).cuda()
@@ -256,12 +261,18 @@ class HierarchicalClassifierWithAttention(nn.Module, from_params.FromParams) :
         h_w, hseq_w = self.word_encoder(embedding, flatten_data.lengths) #(B, H), #(B, L, H)
         
         attn_w = self.word_attention(hseq_w, flatten_data.masks) #(B, L)
+        if torch.isnan(attn_w).any() :
+            import pdb; pdb.set_trace()
+            
         mix_w = torch.bmm(attn_w.unsqueeze(1), hseq_w).squeeze(1) #(B*S, H)
         unflatten_mix = data.unflatten(mix_w) #(B, S, H)
 
         h_s, hseq_s = self.sentence_encoder(unflatten_mix, data.doclens)
 
         attn_s = self.sentence_attention(hseq_s, data.flatten_mask)
+        if torch.isnan(attn_s).any() :
+            import pdb; pdb.set_trace()
+            
         mix_s = torch.bmm(attn_s.unsqueeze(1), hseq_s).squeeze(1)
 
         if self.structured['use_structured'] :
@@ -308,6 +319,102 @@ class HierarchicalClassifierWithAttention(nn.Module, from_params.FromParams) :
                     word_attention=word_attention, 
                     sentence_encoder=sentence_encoder, 
                     sentence_attention=sentence_attention,
+                    decoder=decoder, 
+                    predictor=predictor, 
+                    structured=params.pop('structured'))
+
+@Model.register("retain_classifier")
+class RetainClassifier(nn.Module, from_params.FromParams) :
+    def __init__(self, embedder: Embedder, 
+                       word_encoder: Encoder, 
+                       word_attention: SelfAttention, 
+                       sentence_encoder: Encoder, 
+                       sentence_attention: SelfAttention,
+                       variable_attention: DimAttention,
+                       decoder: FeedForward, 
+                       predictor: Predictor, 
+                       structured: Dict) :
+        super().__init__()
+        self.embedding = embedder
+        self.word_encoder = word_encoder
+        self.sentence_encoder = sentence_encoder
+
+        self.word_attention = word_attention
+        self.sentence_attention = sentence_attention
+        self.variable_attention = variable_attention
+
+        self.decoder = decoder
+        self.predictor = predictor
+
+        self.structured = structured
+
+    def forward(self, batch) :
+        data = HierHolder(batch.X)
+        flatten_data = data.flatten_holder
+        
+        embedding = self.embedding(flatten_data.seq) #(B, L, E)
+        h_w, hseq_w = self.word_encoder(embedding, flatten_data.lengths) #(B, H), #(B, L, H)
+        
+        attn_w = self.word_attention(hseq_w, flatten_data.masks) #(B, L)
+        mix_w = torch.bmm(attn_w.unsqueeze(1), hseq_w).squeeze(1) #(B*S, H)
+        unflatten_mix = data.unflatten(mix_w) #(B, S, H)
+
+        h_s, hseq_s = self.sentence_encoder(unflatten_mix, data.doclens)
+
+        attn_s = self.sentence_attention(hseq_s, data.flatten_mask) #(B, L)
+        attn_s_v = self.variable_attention(hseq_s, data.flatten_mask) #(B, L, H)
+        hseq_s = hseq_s * attn_s_v
+        mix_s = torch.bmm(attn_s.unsqueeze(1), hseq_s).squeeze(1)
+
+        if self.structured['use_structured'] :
+            conditional = torch.Tensor(batch.structured_data).cuda()
+            mix_s = torch.cat([mix_s, conditional], dim=-1)
+
+        potential = self.decoder(mix_s)
+
+        target = torch.Tensor(batch.y).cuda() if batch.have('y') else None
+        weight = batch.weight if batch.have('weight') else None
+
+        predict, loss = self.predictor(potential, target, weight)
+
+        word_attentions = flatten_data.depad(attn_w)
+        batch.outputs = { 
+            "predict" : predict, 
+            "loss" : loss, 
+            "word_attention" : data.unflatten_list(word_attentions), 
+            "sentence_attention" : data.depad(attn_s)
+        }
+
+    @classmethod
+    def from_params(cls, params:Params) :
+        embedder = Embedder.from_params(params.pop('embedder'))
+        word_encoder = Encoder.from_params(input_size=embedder.embed_size, params=params.pop('word_encoder'))
+
+        params['word_attention']['similarity']['tensor_1_dim'] = word_encoder.output_size
+        word_attention = SelfAttention.from_params(params.pop('word_attention'))
+
+        sentence_encoder = Encoder.from_params(input_size=word_encoder.output_size, params=params.pop('sentence_encoder'))
+
+        params['sentence_attention']['similarity']['tensor_1_dim'] = sentence_encoder.output_size
+        sentence_attention = SelfAttention.from_params(params.pop('sentence_attention'))
+
+        params['variable_attention']['similarity']['tensor_1_dim'] = sentence_encoder.output_size
+        params['variable_attention']['similarity']['output_size'] = sentence_encoder.output_size
+        variable_attention = DimAttention.from_params(params.pop('variable_attention'))
+
+        params['decoder']['input_dim'] = sentence_encoder.output_size
+        if params['structured']['use_structured'] :
+            params['decoder']['input_dim'] += params['structured']['structured_dim']
+
+        decoder = FeedForward.from_params(params=params.pop('decoder'))
+        predictor = Predictor.from_params(params.pop('predictor'))
+
+        return cls(embedder=embedder, 
+                    word_encoder=word_encoder, 
+                    word_attention=word_attention, 
+                    sentence_encoder=sentence_encoder, 
+                    sentence_attention=sentence_attention,
+                    variable_attention=variable_attention,
                     decoder=decoder, 
                     predictor=predictor, 
                     structured=params.pop('structured'))
