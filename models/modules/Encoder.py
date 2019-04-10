@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from allennlp.common import Registrable
 from typing import List
 from allennlp.nn.activations import Activation
+from Attention import Attention
 
 class Encoder(nn.Module, Registrable) :
     def forward(self, **kwargs) :
@@ -87,3 +88,20 @@ class SRUEncoder(Encoder) :
         output, h = self.rnn(seqs) #(L, B, H*2), #(Layers, B, H*2)
         h = h[1] #(B, H*2)            
         return h, output.transpose(0, 1)
+
+@Encoder.register('selfattention')
+class SelfAttentionEncoder(Encoder) :
+    def __init__(self, input_size, hidden_size, activation:Activation=Activation.by_name('linear')) :
+        super(SelfAttentionEncoder, self).__init__()
+        self.main_projection = nn.Linear(input_size, hidden_size)
+        self.attn_projection = nn.Linear(input_size, hidden_size)
+
+        self.output_size = hidden_size
+
+        self.activation = activation
+
+    def forward(self, seqs, lengths) :
+        proj_main = self.activation(self.main_projection(seqs))
+        proj_attn = self.activation(self.attn_projection(seqs))
+
+        
