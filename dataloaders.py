@@ -185,7 +185,7 @@ def multitask_surgery_dataset(args, yr=3) :
 
     labellist = ['Target_Hip', 'Task_Hip', 'Target_Knee', 'Task_Knee']
     data.generate_labels(labellist, len(labellist), 'multitask')
-    data.save_on_metric = 'roc_auc'
+    data.save_on_metric = 'macro_roc_auc'
     data.metrics_type = 'multitask'
 
     features = [x for x in data.dataframe.columns if x in ['Meds', 'Surgery', 'continous', 'Binarized']]
@@ -214,6 +214,12 @@ dataloaders = {
     'knee_0.25yr' : lambda x : knee_dataset(x, 0.25),
     'hip_-1yr' : lambda x : hip_dataset(x, -1),
     'knee_-1yr' : lambda x : knee_dataset(x, -1),
+    'both_1yr' : lambda x : multitask_surgery_dataset(x, 1),
+    'both_2yr' : lambda x : multitask_surgery_dataset(x, 2),
+    'both_3yr' : lambda x : multitask_surgery_dataset(x, 3),
+    'both_0.5yr' : lambda x : multitask_surgery_dataset(x, 0.5),
+    'both_0.25yr' : lambda x : multitask_surgery_dataset(x, 0.25),
+    'both_-1yr' : lambda x : multitask_surgery_dataset(x, -1),
     'readmission_hcup' : readmission_hcup_dataset,
     'mortality_30day_hcup' : lambda x : mortality_hcup_dataset(x, '30day'),
     'pneumonia' : pneumonia_dataset,
