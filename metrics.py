@@ -51,6 +51,36 @@ def calc_metrics_multilabel(target, predictions) :
     
     return rep
 
+def calc_metrics_multitask(target, predictions) :
+    n_tasks = len(target[0]) // 2
+    target = np.array(target).reshape(-1, n_tasks, 2)
+    
+    tasks_reps = {}
+    for t in range(n_tasks) :
+        idxs = np.where(target[:, t, ])
+    rep = {}
+    target = np.array(target)
+    nlabels = target.shape[1]
+    predict_classes = np.where(predictions > 0.5, 1, 0)
+    for i in range(nlabels) :
+        rep_i = nested_to_record(classification_report(target[:, i], predict_classes[:, i], output_dict=True), sep='/')
+        rep_i.update({'accuracy' : accuracy_score(target[:, i], predict_classes[:, i])})
+        rep_i.update({'roc_auc' : roc_auc_score(target[:, i], predictions[:, i])})
+        rep_i.update({"pr_auc" : average_precision_score(target[:, i], predictions[:, i])})
+        for k in list(rep_i.keys()) :
+            rep_i['label_' + str(i) + '/' + k] = rep_i[k]
+            del rep_i[k]
+            
+        rep.update(rep_i)
+    
+    macro_roc_auc = np.mean([v for k, v in rep.items() if 'roc_auc' in k])
+    macro_pr_auc = np.mean([v for k, v in rep.items() if 'pr_auc' in k])
+    
+    rep['macro_roc_auc'] = macro_roc_auc
+    rep['macro_pr_auc'] = macro_pr_auc
+    
+    return rep
+
 metrics_map = {
     'classifier' : calc_metrics_classification,
     'regression' : calc_metrics_regression,

@@ -8,6 +8,8 @@ preprocess/IMDB
 preprocess/WhatInNote
 preprocess/HipSurgery
 preprocess/KneeSurgery
+preprocess/MultiTaskSurgery
+preprocess/*.bin
 data
 mimic_github_repos
 Text-encoding-EHR

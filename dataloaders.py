@@ -147,20 +147,21 @@ def diagnosis_dataset(args) :
     return data
 
 def hip_dataset(args, yr=3) :
-    data = Dataset(name='HipSurgery_' + str(yr), dirname=os.path.join(args.data_dir, 'preprocess/HipSurgery/', str(yr) + '_yrs'))
+    if args is None :
+        data_dir='.'
+    else :
+        data_dir = args.data_dir
+    data = Dataset(name='HipSurgery_' + str(yr), dirname=os.path.join(data_dir, 'preprocess/HipSurgery/', str(yr) + '_yrs'))
 
     labellist = ['Target']
     data.generate_labels(labellist, len(labellist), 'binary')
     data.save_on_metric = 'roc_auc'
     data.metrics_type = 'classifier'
 
-#     data.generate_encoded_field('gender_y', 'onehot')
-#     data.generate_encoded_field('age_y', 'onehot')
-#     data.generate_encoded_field('ethnicity_y', 'onehot')
-#     features = [x for x in data.dataframe.columns if x.startswith('feature')]
-#     for f in features :
-#         data.generate_encoded_field(f, 'trivial')
-#     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    features = [x for x in data.dataframe.columns if x in ['Meds', 'Surgery', 'continous', 'Binarized']]
+    for f in features :
+        data.generate_encoded_field(f, 'trivial')
+    data.set_structured_params(regexs=['Meds', r'Surgery$', 'continous', 'Binarized'])
     
     return data
 
@@ -172,13 +173,25 @@ def knee_dataset(args, yr=3) :
     data.save_on_metric = 'roc_auc'
     data.metrics_type = 'classifier'
 
-#     data.generate_encoded_field('gender_y', 'onehot')
-#     data.generate_encoded_field('age_y', 'onehot')
-#     data.generate_encoded_field('ethnicity_y', 'onehot')
-#     features = [x for x in data.dataframe.columns if x.startswith('feature')]
-#     for f in features :
-#         data.generate_encoded_field(f, 'trivial')
-#     data.set_structured_params(regexs=[r'^feature', 'gender_y', 'age_y', 'ethnicity_y'])
+    features = [x for x in data.dataframe.columns if x in ['Meds', 'Surgery', 'continous', 'Binarized']]
+    for f in features :
+        data.generate_encoded_field(f, 'trivial')
+    data.set_structured_params(regexs=['Meds', r'Surgery$', 'continous', 'Binarized'])
+    
+    return data
+
+def multitask_surgery_dataset(args, yr=3) :
+    data = Dataset(name='MultiTaskSurgery_' + str(yr), dirname=os.path.join(args.data_dir, 'preprocess/MultiTaskSurgery/', str(yr) + '_yrs'))
+
+    labellist = ['Target_Hip', 'Task_Hip', 'Target_Knee', 'Task_Knee']
+    data.generate_labels(labellist, len(labellist), 'multitask')
+    data.save_on_metric = 'roc_auc'
+    data.metrics_type = 'multitask'
+
+    features = [x for x in data.dataframe.columns if x in ['Meds', 'Surgery', 'continous', 'Binarized']]
+    for f in features :
+        data.generate_encoded_field(f, 'trivial')
+    data.set_structured_params(regexs=['Meds', r'Surgery$', 'continous', 'Binarized'])
     
     return data
 
@@ -195,6 +208,12 @@ dataloaders = {
     'knee_2yr' : lambda x : knee_dataset(x, 2),
     'hip_3yr' : lambda x : hip_dataset(x, 3),
     'knee_3yr' : lambda x : knee_dataset(x, 3),
+    'hip_0.5yr' : lambda x : hip_dataset(x, 0.5),
+    'knee_0.5yr' : lambda x : knee_dataset(x, 0.5),
+    'hip_0.25yr' : lambda x : hip_dataset(x, 0.25),
+    'knee_0.25yr' : lambda x : knee_dataset(x, 0.25),
+    'hip_-1yr' : lambda x : hip_dataset(x, -1),
+    'knee_-1yr' : lambda x : knee_dataset(x, -1),
     'readmission_hcup' : readmission_hcup_dataset,
     'mortality_30day_hcup' : lambda x : mortality_hcup_dataset(x, '30day'),
     'pneumonia' : pneumonia_dataset,

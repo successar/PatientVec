@@ -67,6 +67,8 @@ class Dataset() :
             encoding_args = {}
 
         datafield = np.array(self.dataframe[field])
+        if type(datafield[0]) == np.ndarray :
+            datafield = np.vstack(self.dataframe[field])
         encoder = field_processors[encoding_type](encoding_args)
         encoder.fit(datafield)
 
@@ -74,7 +76,7 @@ class Dataset() :
 
     def set_structured_params(self, regexs) :
         columns = list(self.dataframe.columns)
-        self.structured_columns = [x for x in columns if any(re.search(r, x) for r in regexs)]
+        self.structured_columns = [x for x in columns if any(re.match(r, x) for r in regexs)]
         self.structured_dim = 0
         for x in self.structured_columns :
             assert x in self.encodings, logging.error('%s not in encodings', x)

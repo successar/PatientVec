@@ -14,8 +14,9 @@ class Trainer() :
         self.model.load_filtered_model(dirname)
     
     def train(self, train_data, test_data, n_iters=15, save_on_metric='roc_auc') :
+        print(n_iters, save_on_metric)
         best_metric = -1.0
-        last_few_metrics = deque(maxlen=3)
+        last_few_metrics = deque(maxlen=10)
         for _ in tqdm_notebook(range(n_iters)) :
             self.model.train(train_data)
 
@@ -42,7 +43,7 @@ class Trainer() :
             f.write(str(test_metrics) + '\n')
             f.close()
 
-            if len(last_few_metrics) >= 3 and best_metric not in last_few_metrics :
+            if len(last_few_metrics) >= 10 and best_metric not in last_few_metrics :
                 print(best_metric, last_few_metrics)
                 break
 
