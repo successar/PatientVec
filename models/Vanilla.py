@@ -3,7 +3,6 @@ import os
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm_notebook
 
 from .Trainer import Trainer
@@ -26,13 +25,7 @@ class ClassificationTrainer(Trainer) :
         generator = Concatenated_Generator(train_data, batch_size=self.bsize, balanced=self.balanced)
         target = np.array(generator.train_data.y)
 
-        class_weight = None
-        if self.class_weight :
-            class_weight = []
-            for i in range(len(target[0])) :
-                class_weight.append(torch.Tensor(compute_class_weight('balanced', np.sort(np.unique(target[:, i])), target[:, i])).cuda().unsqueeze(0))
-
-            class_weight = torch.cat(class_weight, dim=0)
+        class_weight = self.compute_class_weight(target)
     
         self.model.train()
         N = generator.N

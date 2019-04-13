@@ -192,6 +192,8 @@ def multitask_surgery_dataset(args, yr=3) :
     for f in features :
         data.generate_encoded_field(f, 'trivial')
     data.set_structured_params(regexs=['Meds', r'Surgery$', 'continous', 'Binarized'])
+
+    data.n_tasks = 2
     
     return data
 
