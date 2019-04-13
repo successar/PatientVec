@@ -66,12 +66,13 @@ class MultiTask_predictor(Predictor) :
 
     def forward(self, potential, target, weight) :
         # potential : (N, H), target : (N, 2*T), weight : (T, 2)
-        N, T = target.shape[0], target.shape[1]//2
-        target = target.reshape(N, T, 2) #(N, T, 2)
-        assert len(self.decoders) == T
+        if target is not None :
+            N, T = target.shape[0], target.shape[1]//2
+            target = target.reshape(N, T, 2) #(N, T, 2)
+            assert len(self.decoders) == T
         loss = 0.0
         predictions = []
-        for i in self.decoder.keys() :
+        for i in range(len(self.decoders)) :
             potential_task = self.decoders[i](potential) #(B, 1)
             prediction_task = torch.sigmoid(potential_task) #(B, 1)
             predictions.append(prediction_task.unsqueeze(1))
