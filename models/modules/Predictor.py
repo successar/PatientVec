@@ -62,7 +62,7 @@ class MultiTask_predictor(Predictor) :
     def __init__(self, n_tasks:int, task_decoder:FeedForward) :
         super(MultiTask_predictor, self).__init__()
         assert n_tasks > 1
-        self.decoders = nn.ModuleDict({i:deepcopy(task_decoder) for i in range(n_tasks)})
+        self.decoders = nn.ModuleList([deepcopy(task_decoder) for i in range(n_tasks)])
 
     def forward(self, potential, target, weight) :
         # potential : (N, H), target : (N, 2*T), weight : (T, 2)
