@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from allennlp.common import Registrable
 from typing import List
 from allennlp.nn.activations import Activation
-from Attention import Attention
+from .Attention import Attention
 
 class Encoder(nn.Module, Registrable) :
     def forward(self, **kwargs) :
