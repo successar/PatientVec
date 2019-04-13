@@ -71,7 +71,7 @@ class MultiTask_predictor(Predictor) :
         assert len(self.decoders) == T
         loss = 0.0
         predictions = []
-        for i in self.decoder.keys() :
+        for i in range(len(self.decoders)) :
             potential_task = self.decoders[i](potential) #(B, 1)
             prediction_task = torch.sigmoid(potential_task) #(B, 1)
             predictions.append(prediction_task.unsqueeze(1))
