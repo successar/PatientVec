@@ -74,7 +74,7 @@ class Trainer:
                 n_tasks = target.shape[1] // 2
                 target = target.reshape(-1, n_tasks, 2)
                 for i in range(n_tasks) :
-                    targets.append(target[np.where(target[:, i, 1] == 1), i, 0])
+                    targets.append(target[np.where(target[:, i, 1] == 1), i, 0][0])
             else :
                 for i in range(len(target[0])):
                     targets.append(target[:, i])
